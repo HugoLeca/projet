@@ -15,6 +15,7 @@
 
 #include <pi_regulator.h>
 #include <process_image.h>
+#include <process_distance.h>
 
 // void SendUint8ToComputer(uint8_t* data, uint16_t size) 
 // {
@@ -45,6 +46,8 @@ int main(void)
 
     //starts the serial communication
     serial_start();
+
+
     //starts the USB communication
     usb_start();
 
@@ -52,34 +55,29 @@ int main(void)
     //dcmi_start();
 	//po8030_start();
 	//inits the motors
-	//motors_init();
+	motors_init();
 
-	//starts the threads for the pi regulator and the processing of the image
-	//pi_regulator_start();
+	//starts the threads for the pi regulator
+	pi_regulator_start();
 	//process_image_start();
 
-	systime_t time;
-	time = chVTGetSystemTime();
+	
 	
 	//starts the thread for the ToF 
 	VL53L0X_start();
 
-	chprintf((BaseSequentialStream *)&SDU1, "capture␣time␣=␣%d\n", chVTGetSystemTime()-time);
-
-
-	
-	// volatile uint16_t distance_mm = 0;
-
-	// distance_mm = VL53L0X_get_dist_mm();
-	// chprintf((BaseSequentialStream *)&SD3, "distance_mm␣=␣%d␣\n", distance_mm);
+	process_distance_start();
 
 	//VL53L0X_stop();
 
 
+
     /* Infinite loop. */
     while (1) {
+
     	//waits 1 second
         chThdSleepMilliseconds(1000);
+
     }
 }
 
