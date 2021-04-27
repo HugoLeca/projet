@@ -130,7 +130,7 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 	uint8_t *img_buff_ptr;
 	uint8_t image[IMAGE_BUFFER_SIZE] = {0};
-	uint16_t lineWidth = 0;
+	//uint16_t lineWidth = 0;
 
 	bool send_to_computer = true;
 
@@ -147,13 +147,13 @@ static THD_FUNCTION(ProcessImage, arg) {
 			image[i/2] = (uint8_t)img_buff_ptr[i]&0xF8;
 		}
 
-		//search for a line in the image and gets its width in pixels
-		lineWidth = extract_line_width(image);
+		// //search for a line in the image and gets its width in pixels
+		// lineWidth = extract_line_width(image);
 
-		//converts the width into a distance between the robot and the camera
-		if(lineWidth){
-			distance_cm = PXTOCM/lineWidth;
-		}
+		// //converts the width into a distance between the robot and the camera
+		// if(lineWidth){
+		// 	distance_cm = PXTOCM/lineWidth;
+		// }
 
 		if(send_to_computer){
 			//sends to the computer the image

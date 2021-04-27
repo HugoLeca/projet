@@ -17,12 +17,12 @@
 #include <process_image.h>
 #include <process_distance.h>
 
-// void SendUint8ToComputer(uint8_t* data, uint16_t size) 
-// {
-// 	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)"START", 5);
-// 	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)&size, sizeof(uint16_t));
-// 	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)data, size);
-// }
+void SendUint8ToComputer(uint8_t* data, uint16_t size) 
+{
+	chSequentialStreamWrite((BaseSequentialStream *)&SDU1, (uint8_t*)"START", 5);
+	chSequentialStreamWrite((BaseSequentialStream *)&SDU1, (uint8_t*)&size, sizeof(uint16_t));
+	chSequentialStreamWrite((BaseSequentialStream *)&SDU1, (uint8_t*)data, size);
+}
 
 static void serial_start(void)
 {
@@ -52,14 +52,14 @@ int main(void)
     usb_start();
 
     //starts the camera
-    //dcmi_start();
-	//po8030_start();
+    dcmi_start();
+	po8030_start();
 	//inits the motors
-	motors_init();
+	//motors_init();
 
 	//starts the threads for the pi regulator
-	pi_regulator_start();
-	//process_image_start();
+	//pi_regulator_start();
+	process_image_start();
 
 	
 	

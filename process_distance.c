@@ -29,8 +29,8 @@ static THD_FUNCTION(ProcessDistanceThd, arg) {
     /* Reader thread loop.*/
     while (1) {
 
-    	distance_feuille = VL53L0X_get_dist_mm();
-		chprintf((BaseSequentialStream *)&SDU1, "distance_mm␣=␣%d␣\n", distance_feuille);
+    	//distance_feuille = VL53L0X_get_dist_mm();
+		//chprintf((BaseSequentialStream *)&SDU1, "distance_mm␣=␣%d␣\n", distance_feuille);
 
 		chThdSleepMilliseconds(100);
     }
