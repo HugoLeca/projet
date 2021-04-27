@@ -9,13 +9,14 @@ PROJECT = projet_e-puck
 GLOBAL_PATH = ../lib/e-puck2_main-processor
 
 #Source files to include
-CSRC += ./main.c \
-		./pi_regulator.c \
+CSRC += ./main.c          \
+		./pi_regulator.c  \
 		./process_image.c \
 		./process_distance.c \
+		./test_audio.c    \
 
 #Header folders to include
-INCDIR += 
+INCDIR += ./play_melody.h \
 
 #Jump to the main Makefile
 include $(GLOBAL_PATH)/Makefile

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <math.h>
 
+#include "play_melody.h"
 #include "ch.h"
 #include "hal.h"
 #include "memory_protection.h"
@@ -16,6 +17,7 @@
 #include <pi_regulator.h>
 #include <process_image.h>
 #include <process_distance.h>
+#include <test_audio.h>
 
 void SendUint8ToComputer(uint8_t* data, uint16_t size) 
 {
@@ -46,11 +48,8 @@ int main(void)
 
     //starts the serial communication
     serial_start();
-
-
     //starts the USB communication
     usb_start();
-
     //starts the camera
     dcmi_start();
 	po8030_start();
@@ -60,6 +59,10 @@ int main(void)
 	//starts the threads for the pi regulator
 	//pi_regulator_start();
 	process_image_start();
+
+	playMelodyStart();
+
+    test_audio_external();
 
 	
 	
