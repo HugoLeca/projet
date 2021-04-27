@@ -34,8 +34,8 @@ static const melody_t melody[1] = {
 void test_audio_external(){
 
 	while(1){
-		playMelody(EXTERNAL_SONG, ML_WAIT_AND_CHANGE, melody[0]);
-		WaitMelodyHasFinished();
+		playMelody(EXTERNAL_SONG, ML_WAIT_AND_CHANGE, &melody[0]);
+		waitMelodyHasFinished();
 		chThdSleepMilliseconds(WAIT_BETWEEN_SONGS_MS);
 	}
 }
