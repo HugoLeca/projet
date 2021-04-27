@@ -15,6 +15,9 @@
 #include <pi_regulator.h>
 #include <process_image.h>
 
+#include <play_melody.h>
+#include <test_audio.h>
+
 void SendUint8ToComputer(uint8_t* data, uint16_t size) 
 {
 	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)"START", 5);
@@ -42,21 +45,26 @@ int main(void)
     mpu_init();
 
     //starts the serial communication
-    serial_start();
+    //serial_start();
     //start the USB communication
-    usb_start();
+    //usb_start();
     //starts the camera
-    dcmi_start();
-	po8030_start();
+    //dcmi_start();
+	//po8030_start();
 	//inits the motors
-	motors_init();
+	//motors_init();
 
 	//stars the threads for the pi regulator and the processing of the image
-	pi_regulator_start();
-	process_image_start();
+	//pi_regulator_start();
+	//process_image_start();
+
+    playMelodyStart();
+
+    test_audio_external();
 
     /* Infinite loop. */
     while (1) {
+
     	//waits 1 second
         chThdSleepMilliseconds(1000);
     }
