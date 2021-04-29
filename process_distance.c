@@ -9,8 +9,22 @@
 #include <process_distance.h>
 
 
+// fonction pour que le robot se place devant le bon pattern du début 
+// void good_start_position(void){
 
-// fonction pour start le ToF et obtenir la distance
+
+// 	while(GOOD_START == false) {
+// 		if(VL53L0X_get_dist_mm > DISTANCE_THRESHOLD) {
+// 			GOOD_START = false;
+// 		}
+// 		else {
+// 			if
+// 		}
+
+// 	}
+// }
+
+
 // ToF deja configuré => si on veut changer le mode (continous/single/continuous timed) ou l'accuracy
 // (default mode/high accuracy/long range/high spped) aller dans VL53L0X.c
 

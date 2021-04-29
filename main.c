@@ -54,17 +54,15 @@ int main(void)
     dcmi_start();
 	po8030_start();
 	//inits the motors
-	//motors_init();
+	motors_init();
 
 	//starts the threads for the pi regulator
-	//pi_regulator_start();
+	pi_regulator_start();
 	process_image_start();
 
-	playMelodyStart();
+	//playMelodyStart();
 
-    test_audio_external();
-
-	
+    //test_audio_external();
 	
 	//starts the thread for the ToF 
 	VL53L0X_start();
@@ -72,8 +70,6 @@ int main(void)
 	process_distance_start();
 
 	//VL53L0X_stop();
-
-
 
     /* Infinite loop. */
     while (1) {

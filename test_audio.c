@@ -3,6 +3,7 @@
 #include <test_audio.h>
 #include <play_melody.h>
 
+#include <main.h>
 
 
 //creation d'une suite de notes exterieur au fichier play_melody.c/.h

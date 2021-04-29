@@ -99,6 +99,11 @@ uint16_t extract_line_width(uint8_t *buffer){
 	}
 }
 
+//fonction qui detecte le bon pattern 
+// bool good_start_pattern(void) {
+
+// }
+
 static THD_WORKING_AREA(waCaptureImage, 256);
 static THD_FUNCTION(CaptureImage, arg) {
 
