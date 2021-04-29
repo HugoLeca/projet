@@ -16,7 +16,7 @@ CSRC += ./main.c          \
 		./test_audio.c    \
 
 #Header folders to include
-INCDIR += ./play_melody.h \
+INCDIR += ./$(GLOBAL_PATH)/src/audio \
 
 #Jump to the main Makefile
 include $(GLOBAL_PATH)/Makefile

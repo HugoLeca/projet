@@ -60,16 +60,10 @@ int main(void)
 	pi_regulator_start();
 	process_image_start();
 
-	//playMelodyStart();
-
-    //test_audio_external();
 	
-	//starts the thread for the ToF 
-	VL53L0X_start();
-
-	process_distance_start();
-
-	//VL53L0X_stop();
+//start the thread for playing melodies, internals or externals
+    playMelodyStart();
+    TestAudioStart();
 
     /* Infinite loop. */
     while (1) {
