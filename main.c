@@ -57,9 +57,9 @@ int main(void)
 	//pi_regulator_start();
 	//process_image_start();
 
+    //start the thread for playing melodies, internals or externals
     playMelodyStart();
-
-    test_audio_external();
+    TestAudioStart();
 
     /* Infinite loop. */
     while (1) {
