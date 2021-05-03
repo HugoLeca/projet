@@ -63,6 +63,9 @@ static THD_FUNCTION(PiRegulator, arg) {
 		right_motor_set_speed(speed);
 		left_motor_set_speed(speed);
 
+		
+        chprintf((BaseSequentialStream *)&SDU1, "speed = %d\n", speed);
+
         //100Hz
         chThdSleepUntilWindowed(time, time + MS2ST(10));
     }

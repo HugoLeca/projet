@@ -23,8 +23,10 @@ extern "C" {
 #define KP						60.0f
 #define KI 						2.5f	//must not be zero
 #define MAX_SUM_ERROR 			(MOTOR_SPEED_LIMIT/KI)
-#define GOOD_START              false
 #define DISTANCE_THRESHOLD      200.0f 
+#define PROX_MAX				200.0f
+#define PROX_THRESHOLD			20.0f
+#define MOTOR_SPEED 			90.0f 
 
 
 /** Robot wide IPC bus. */

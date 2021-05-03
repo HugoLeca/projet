@@ -3,7 +3,6 @@
 #include <string.h>
 #include <math.h>
 
-#include "play_melody.h"
 #include "ch.h"
 #include "hal.h"
 #include "memory_protection.h"
@@ -12,12 +11,20 @@
 #include <motors.h>
 #include <camera/po8030.h>
 #include <sensors/VL53L0X/VL53L0X.h>
+#include <sensors/proximity.h>
+#include <audio/audio_thread.h>
+#include <audio/play_melody.h>
+#include <msgbus/messagebus.h>
 #include <chprintf.h>
 
 #include <pi_regulator.h>
 #include <process_image.h>
 #include <process_distance.h>
 #include <test_audio.h>
+
+messagebus_t bus;
+MUTEX_DECL(bus_lock);
+CONDVAR_DECL(bus_condvar);
 
 void SendUint8ToComputer(uint8_t* data, uint16_t size) 
 {
@@ -45,6 +52,7 @@ int main(void)
     halInit();
     chSysInit();
     mpu_init();
+    messagebus_init(&bus, &bus_lock, &bus_condvar);
 
     //starts the serial communication
     serial_start();
@@ -55,15 +63,28 @@ int main(void)
 	po8030_start();
 	//inits the motors
 	motors_init();
+	//starts the audio
+	//dac_start();
+	//starts the thread for the proximity sensors 
+	proximity_start();
+	calibrate_ir();
 
 	//starts the threads for the pi regulator
-	pi_regulator_start();
-	process_image_start();
+	//pi_regulator_start();
+	//starts the thread for the sensor
+	//process_distance_start();
+
+	//process_image_start();
 
 	
-//start the thread for playing melodies, internals or externals
-    playMelodyStart();
-    TestAudioStart();
+	//starts the thread for playing melodies, internals or externals
+    //playMelodyStart();
+    //test_audio_external();
+
+    //starts the thread for the rotation
+    rotation_start();
+
+
 
     /* Infinite loop. */
     while (1) {

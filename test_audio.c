@@ -16,7 +16,7 @@ static const uint16_t gamme_do_majeur_melody[] = {
 static const float gamme_do_majeur_tempo[] = {
 
 	4, 4, 4, 4,
-	4, 4, 4, 4, 
+	4, 4, 4, 4
 };
 
 
@@ -24,7 +24,7 @@ static const melody_t melody[1] = {
   //gamme de do majeur
   {
     .notes = gamme_do_majeur_melody,
-    .tempo = gamme_do_majeur_tempo ,
+    .tempo = gamme_do_majeur_tempo,
     .length = sizeof(gamme_do_majeur_melody)/sizeof(uint16_t),
   },
 
@@ -32,39 +32,13 @@ static const melody_t melody[1] = {
 
 
 //joue simplement la gamme de do majeur en tant que external melody
-/*void test_audio_external(){
+void test_audio_external(void){
 
 	while(1){
-		playMelody(EXTERNAL_SONG, ML_WAIT_AND_CHANGE, &melody[0]);
-		waitMelodyHasFinished();
+		playMelody(EXTERNAL_SONG, ML_SIMPLE_PLAY, &melody[0]);
+		//waitMelodyHasFinished();
 		chThdSleepMilliseconds(WAIT_BETWEEN_SONGS_MS);
 	}
-}*/
-
-
-// test de mm fonction mais avec un thread
-
-static THD_WORKING_AREA(waTestAudioThd, 128);
-static THD_FUNCTION(TestAudioThd, arg) {
-
-  chRegSetThreadName("TestAudio Thd");
-
-	(void)arg;
-
-
-
-	while(1){
-
-		playMelody(EXTERNAL_SONG, ML_WAIT_AND_CHANGE, &melody[0]);
-		waitMelodyHasFinished();
-		chThdSleepMilliseconds(WAIT_BETWEEN_SONGS_MS);
-	}
-}
-
-void TestAudioStart(void){
-
-	//create the thread
-	chThdCreateStatic(waTestAudioThd, sizeof(waTestAudioThd), NORMALPRIO, TestAudioThd, NULL);
 }
 
 
