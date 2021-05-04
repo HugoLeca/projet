@@ -1,8 +1,9 @@
 #ifndef PROCESS_IMAGE_H
 #define PROCESS_IMAGE_H
 
-float get_distance_cm(void);
-uint16_t get_line_position(void);
 void process_image_start(void);
+
+//extracts the beginning (public_begin) and end (public end) of the bar code
+void extract_limits(uint8_t *buffer);
 
 #endif /* PROCESS_IMAGE_H */

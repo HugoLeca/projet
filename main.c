@@ -3,7 +3,8 @@
 #include <string.h>
 #include <math.h>
 
-#include "play_melody.h"
+#include <audio_thread.h>
+#include <play_melody.h>
 #include "ch.h"
 #include "hal.h"
 #include "memory_protection.h"
@@ -44,26 +45,29 @@ int main(void)
     mpu_init();
 
     //starts the serial communication
-    //serial_start();
+    serial_start();
     //start the USB communication
     //usb_start();
     //starts the camera
-    //dcmi_start();
-	//po8030_start();
+    dcmi_start();
+	po8030_start();
 	//inits the motors
 	//motors_init();
 
 	//stars the threads for the pi regulator and the processing of the image
 	//pi_regulator_start();
-	//process_image_start();
+	process_image_start();
+    //start the DAC module
+   // dac_start();
+    //start the thread for playing melodies, internals or externals
+   // playMelodyStart();
 
-    playMelodyStart();
+   // test_audio_external();
 
-    test_audio_external();
+
 
     /* Infinite loop. */
     while (1) {
-
     	//waits 1 second
         chThdSleepMilliseconds(1000);
     }
