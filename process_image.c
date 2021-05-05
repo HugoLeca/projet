@@ -22,6 +22,54 @@ static BSEMAPHORE_DECL(image_ready_sem, TRUE);
  *  Returns 0 if line not found
  */
 
+void extract_limits_bis(uint8_t *buffer){
+	uint16_t i = 0, j = IMAGE_BUFFER_SIZE-5, diff = 0, begin = 0, end = 0;
+	uint8_t stop = 0;
+
+	//searching for a beginning
+	while(stop == 0 && i<(IMAGE_BUFFER_SIZE - WIDTH_SLOPE)){
+
+		if( abs(buffer[i]) > abs(buffer[i+5]) ){
+			diff = buffer[i] - buffer[i+5];
+		} else {
+			diff = buffer[i+5] - buffer[i];
+		}
+
+		if (diff > DIFF_THRESHOLD){
+			begin = i;
+			stop = 1;
+		}
+		i++;
+	}
+
+	// if begin found, search for end
+	//
+
+	if(i < (IMAGE_BUFFER_SIZE - WIDTH_SLOPE)  && begin){
+		stop = 0;
+		
+		while(stop == 0 && j > 5){
+
+			if( (buffer[j-5]) < (buffer[j]) ){
+				diff = buffer[j] - buffer[j-5];
+			} else if((buffer[j-5]) > (buffer[j])) {
+				diff = buffer[j-5] - buffer[j];
+			} else { i = true;}
+
+			if(diff > DIFF_THRESHOLD){
+				end = j;
+				stop = 1;
+			}
+			j--;
+		}
+	}
+
+	if(begin && end != 640){
+		public_begin = begin;
+		public_end = end;
+	} else {return;}
+
+}
 void extract_limits(uint8_t *buffer){
 
 	//local variables we are going to use in this function :
@@ -55,7 +103,7 @@ void extract_limits(uint8_t *buffer){
 	{
 		stop = 0;
 
-		while(stop == 0 && i < IMAGE_BUFFER_SIZE)
+		while(stop == 0 && j > 5)
 		{
 			if(buffer[j] < mean && buffer[j-WIDTH_SLOPE] > mean)
 			{
@@ -92,6 +140,64 @@ void extract_limits(uint8_t *buffer){
 	}
 
 
+}
+
+uint16_t extract_code(uint8_t *buffer){
+
+	//taille du code barre en pixels.
+	//16 bits nécessaires (valeur max 640)
+	uint16_t width_pixels = 0, code = 0;
+	uint16_t pix_per_section = 0;
+	uint16_t count = 1;
+	uint16_t mask = 0;
+	uint16_t average_section = 0; 
+	uint16_t average_barcode = 0;
+
+	mask = 1 << (BAR_CODE_SIZE - 1);
+	width_pixels = (public_end - public_begin) + 1;
+	//division entière pour avoir le nombre de compartiments
+	pix_per_section = width_pixels/BAR_CODE_SIZE; 
+
+	//averaging
+	for(uint16_t i = 0 ; i < IMAGE_BUFFER_SIZE ; i++){
+		average_barcode += buffer[i];
+	}
+	average_barcode /= width_pixels;
+
+
+	//remplissage du code binaire
+	for(uint16_t i= public_begin; i <= public_end ; i++){
+
+		//sortie de boucle si les derniers pixels ne sont pas utiles 
+		if ((public_end - i) + 1 < pix_per_section){
+			break;
+		} else {
+			average_section += buffer[i];
+			//fin de section --> prochain bit du code est disponible
+			//reset du count et de la moyenne de section
+			if (count == pix_per_section)
+			{
+				average_section /= pix_per_section;
+				if (get_section_value(average_barcode, average_section))
+				{
+					code |= mask;
+				}
+				mask = mask >> 1;
+				count = 0;
+				average_section = 0;
+			}
+			count++;
+		}	
+	}
+
+	return code;
+}
+
+int get_section_value(uint16_t average_barcode, uint16_t average_section){
+
+	if (average_section > average_barcode)
+		{return false;}
+	else {return true;}
 }
 
 static THD_WORKING_AREA(waCaptureImage, 256);
@@ -142,10 +248,12 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 		uint8_t data_pixel=0;
 		uint8_t temp_data=0;
+		uint16_t code = 0;
+		bool send_to_computer = true;
 
 
 
-		for (int i = 0; i < IMAGE_BUFFER_SIZE; ++i)
+		/*for (int i = 0; i < IMAGE_BUFFER_SIZE; ++i)
 		{
 			// bit by bit manipulation to have a variable data_pixel with the 6 bits Green values
 
@@ -156,15 +264,30 @@ static THD_FUNCTION(ProcessImage, arg) {
 			data_pixel |= temp_data;//merge of the information to get G0 --> G7
 			image[i] = data_pixel;
 			img_buff_ptr++;
+		}*/
+		//Extracts only the red pixels
+		for(uint16_t i = 0 ; i < (2 * IMAGE_BUFFER_SIZE) ; i+=2){
+		//extracts first 5bits of the first byte
+
+		//takes nothing from the second byte
+		image[i/2] = (uint8_t)img_buff_ptr[i]&0xF8;
 		}
 
+		/*if(send_to_computer){
+			//sends to the computer the image
+			SendUint8ToComputer(image, IMAGE_BUFFER_SIZE);
+		}
+		//invert the bool
+		send_to_computer = !send_to_computer;
+		*/
+
 		//let's find the (public) end and begin variables
-		extract_limits(image);
+		extract_limits_bis(image);
+		//code = extract_code(image);
 
-		chprintf((BaseSequentialStream *)&SD3, "begin=%ipixels\n",public_begin);
-		chprintf((BaseSequentialStream *)&SD3, "end=%ipixels\n",public_end);
-
-		//SendUint8ToComputer(image, IMAGE_BUFFER_SIZE);
+		//chprintf((BaseSequentialStream *)&SD3, "code=%lxpixels\r\n",code);
+		chprintf((BaseSequentialStream *)&SD3, "begin=%ipixels\n\r",public_begin);
+		chprintf((BaseSequentialStream *)&SD3, "end=%ipixels\n\r",public_end);
     }
 
 
