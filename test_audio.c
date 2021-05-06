@@ -9,14 +9,14 @@
 //creation d'une suite de notes exterieur au fichier play_melody.c/.h
 static const uint16_t gamme_do_majeur_melody[] = {
 
-	NOTE_C1, NOTE_D1, NOTE_E1, NOTE_F1, 
-	NOTE_G1, NOTE_A1, NOTE_B1, NOTE_C2
+	NOTE_C4, NOTE_D4, NOTE_E4, NOTE_F4,
+	NOTE_G4, NOTE_A4, NOTE_B4, NOTE_C5,
 };
 
 static const float gamme_do_majeur_tempo[] = {
 
-	4, 4, 4, 4,
-	4, 4, 4, 4
+	16, 16, 16, 16,
+	16, 16, 16, 16,
 };
 
 
@@ -34,12 +34,38 @@ static const melody_t melody[1] = {
 //joue simplement la gamme de do majeur en tant que external melody
 void test_audio_external(void){
 
+
 	while(1){
 		playMelody(EXTERNAL_SONG, ML_SIMPLE_PLAY, &melody[0]);
-		//waitMelodyHasFinished();
+		chThdSleepMilliseconds(3000);
+	}
+}
+
+
+// test de mm fonction mais avec un thread
+
+/*static THD_WORKING_AREA(waTestAudioThd, 526);
+static THD_FUNCTION(TestAudioThd, arg) {
+
+  chRegSetThreadName("TestAudio Thd");
+
+	(void)arg;
+
+
+
+	while(1){
+
+		playMelody(EXTERNAL_SONG, ML_WAIT_AND_CHANGE, &melody[0]);
+		waitMelodyHasFinished();
 		chThdSleepMilliseconds(WAIT_BETWEEN_SONGS_MS);
 	}
 }
+
+void TestAudioStart(void){
+
+	//create the thread
+	chThdCreateStatic(waTestAudioThd, sizeof(waTestAudioThd), NORMALPRIO, TestAudioThd, NULL);
+}*/
 
 
 

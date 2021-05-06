@@ -88,9 +88,7 @@ int main(void)
     while (1) {
 
   //   	good_rotation();
-
-  //   	counter = get_counter();
-
+  
   //     	chprintf((BaseSequentialStream *)&SD3, "prox(3)␣=␣%d␣prox(1)␣=␣%d␣prox(2)␣=%d\r\n", get_calibrated_prox(3),
 		// get_calibrated_prox(1), get_calibrated_prox(2));
 
