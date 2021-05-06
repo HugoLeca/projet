@@ -19,7 +19,7 @@
 
 #include <pi_regulator.h>
 #include <process_image.h>
-#include <process_distance.h>
+#include <robot_management.h>
 #include <test_audio.h>
 
 messagebus_t bus;
@@ -65,14 +65,17 @@ int main(void)
 	motors_init();
 	//starts the audio
 	//dac_start();
-	//starts the thread for the proximity sensors 
+	//starts the threads for the proximity sensors 
 	proximity_start();
 	calibrate_ir();
 
-	//starts the threads for the pi regulator
+	//starts the thread for the ToF sensor
+	VL53L0X_start();
+
+	//starts the thread for the pi regulator
 	//pi_regulator_start();
-	//starts the thread for the sensor
-	//process_distance_start();
+	//starts the thread for the robot
+	robot_management_start();
 
 	//process_image_start();
 
@@ -81,13 +84,15 @@ int main(void)
     //playMelodyStart();
     //test_audio_external();
 
-    //starts the thread for the rotation
-    rotation_start();
-
-
-
     /* Infinite loop. */
     while (1) {
+
+  //   	good_rotation();
+
+  //   	counter = get_counter();
+
+  //     	chprintf((BaseSequentialStream *)&SD3, "prox(3)␣=␣%d␣prox(1)␣=␣%d␣prox(2)␣=%d\r\n", get_calibrated_prox(3),
+		// get_calibrated_prox(1), get_calibrated_prox(2));
 
     	//waits 1 second
         chThdSleepMilliseconds(1000);
