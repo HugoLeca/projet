@@ -3,9 +3,9 @@
 
 
 void robot_management_start(void);
-void good_rotation(void);
+//void good_rotation(void);
 bool straight_line(void);
-//int16_t speed_correction(void);
+int16_t speed_correction(void);
 
 
 #endif /* ROBOT_MANAGEMENT_H_ */

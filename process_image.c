@@ -26,6 +26,7 @@ void extract_limits_bis(uint8_t *buffer){
 	uint16_t i = 0, j = IMAGE_BUFFER_SIZE-5, diff = 0, begin = 0, end = 0;
 	uint8_t stop = 0;
 
+	
 	//searching for a beginning
 	while(stop == 0 && i<(IMAGE_BUFFER_SIZE - WIDTH_SLOPE)){
 

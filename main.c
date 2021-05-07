@@ -87,10 +87,6 @@ int main(void)
     /* Infinite loop. */
     while (1) {
 
-  //   	good_rotation();
-  
-  //     	chprintf((BaseSequentialStream *)&SD3, "prox(3)␣=␣%d␣prox(1)␣=␣%d␣prox(2)␣=%d\r\n", get_calibrated_prox(3),
-		// get_calibrated_prox(1), get_calibrated_prox(2));
 
     	//waits 1 second
         chThdSleepMilliseconds(1000);
