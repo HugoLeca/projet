@@ -11,8 +11,8 @@ extern "C" {
 
 
 //constants for the differents parts of the project
-#define DIFF_THRESHOLD			60 //valeur expérimentale a revoir. moyenne pour calibrer?
-#define BAR_CODE_SIZE 			16
+#define COUNTED_ENOUGH			5
+#define BAR_CODE_SIZE 			8
 #define BLACK_THRESHOLD			50
 #define WHITE_THRESHOLD			100
 #define IMAGE_BUFFER_SIZE		640
