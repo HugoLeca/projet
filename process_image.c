@@ -12,7 +12,7 @@
 
 
 static uint16_t public_end = 0;
-static volatile uint8_t data[BAR_CODE_SIZE] = {0};
+static volatile uint16_t data[BAR_CODE_SIZE] = {0};
 static uint16_t public_begin = 0;
 
 //semaphore
@@ -77,9 +77,9 @@ void extract_limits_bis(uint8_t *buffer){
 		}
 	}
 
-	if(public_end != 630){
-	public_end = end;
-	public_begin = begin;
+	if(1){
+		public_end = end;
+		public_begin = begin;
 	}
 }
 
@@ -98,7 +98,7 @@ uint8_t extract_code_ter(uint8_t *buffer){
 	uint16_t diff = 0;
 
 	average_diff = 10;
-	uint8_t volatile data_volatile[BAR_CODE_SIZE] = {0};
+	uint16_t volatile data_volatile[BAR_CODE_SIZE] = {0};
 
 	while(i<(IMAGE_BUFFER_SIZE - WIDTH_SLOPE)){
 
@@ -122,7 +122,7 @@ uint8_t extract_code_ter(uint8_t *buffer){
 
 			data[count_size_data] = i;
 			count_size_data++;
-			i += WIDTH_SLOPE;
+			i += 5*WIDTH_SLOPE;
 
 
 
@@ -254,6 +254,7 @@ static THD_FUNCTION(ProcessImage, arg) {
 		//sends the data buffer of the given size to the computer
 		//SendUint8ToComputer(uint8_t* data, uint16_t size);
 
+		bool send_to_computer = true;
 
 		uint16_t code = 0;
 
@@ -273,7 +274,8 @@ static THD_FUNCTION(ProcessImage, arg) {
 		}
 		//invert the bool
 		send_to_computer = !send_to_computer;
-*/
+		*/
+
 
 
 
@@ -282,6 +284,7 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 		//let's find the (public) end and begin variables
 		extract_limits_bis(image);
+
 		chprintf((BaseSequentialStream *)&SD3, "begin=%i pixels",public_begin);
 		chprintf((BaseSequentialStream *)&SD3, "end=%ipixels\r\n",public_end);
 
@@ -302,12 +305,6 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 		}
 
-
-
-
-	
-		//chprintf((BaseSequentialStream *)&SD3, "code=%lxpixels\r\n",code);
-		//if(public_begin != 0 && public_end != IMAGE_BUFFER_SIZE - WIDTH_SLOPE)
 	}
 }
 
