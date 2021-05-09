@@ -18,4 +18,7 @@ uint16_t extract_code(uint8_t *buffer);
 //le code barre, retourne faux sinon
 int get_section_value(uint16_t average_barcode, uint16_t average_section);
 
+uint16_t get_public_begin(void);
+uint16_t get_public_end(void) ;
+
 #endif /* PROCESS_IMAGE_H */

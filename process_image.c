@@ -71,6 +71,7 @@ void extract_limits_bis(uint8_t *buffer){
 	} else {return;}
 
 }
+
 void extract_limits(uint8_t *buffer){
 
 	//local variables we are going to use in this function :
@@ -292,11 +293,19 @@ static THD_FUNCTION(ProcessImage, arg) {
 		//code = extract_code(image);
 
 		//chprintf((BaseSequentialStream *)&SD3, "code=%lxpixels\r\n",code);
-		chprintf((BaseSequentialStream *)&SD3, "begin=%ipixels\n\r",public_begin);
-		chprintf((BaseSequentialStream *)&SD3, "end=%ipixels\n\r",public_end);
+		// chprintf((BaseSequentialStream *)&SD3, "begin=%ipixels\n\r",public_begin);
+		// chprintf((BaseSequentialStream *)&SD3, "end=%ipixels\n\r",public_end);
     }
 
 
+}
+
+uint16_t get_public_begin(void) {
+	return public_begin;
+}
+
+uint16_t get_public_end(void) {
+	return public_end;
 }
 
 

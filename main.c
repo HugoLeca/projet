@@ -77,7 +77,7 @@ int main(void)
 	//starts the thread for the robot
 	robot_management_start();
 
-	//process_image_start();
+	process_image_start();
 
 	
 	//starts the thread for playing melodies, internals or externals

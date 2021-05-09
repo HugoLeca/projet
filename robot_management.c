@@ -10,20 +10,11 @@
 
 #include <pi_regulator.h>
 #include <robot_management.h>
+#include <process_image.h>
 
-
-
-// ToF deja configuré => si on veut changer le mode (continous/single/continuous timed) ou l'accuracy
-// (default mode/high accuracy/long range/high spped) aller dans VL53L0X.c
-
-// VL53L0X_start(); //si le ToF est déjà configuré : ne fait rien - sinon intialise la communication et configure le ToF dans une thread
-// VL53L0X_stop(); // stop la thread
-// VL53L0X_get_dist_mm(); // retourne la distance en mm
-
-//proximity sensors : get_calibrated_prox => à la lumiere ambiante prox = 0; plus on approche un objet plus la valeur augmente (jusqu'à > 1000)
-
-//static uint16_t counter = 0;
-
+static uint8_t regulator_start = 0;
+static uint8_t corner = 0; 
+static uint8_t move_straight = 0; 
 
 
 // void good_rotation(void){ 
@@ -34,8 +25,8 @@
 // 	    right_motor_set_speed(MOTOR_SPEED);
 
 // 	    //check the right rotation angle
-// 		if ((get_calibrated_prox(2) >= get_calibrated_prox(0)) && (get_calibrated_prox(4) >= get_calibrated_prox(5))) {
-// 			counter = counter + 1;
+// 		if ((get_calibrated_prox(2) > get_calibrated_prox(0)) && (get_calibrated_prox(4) > get_calibrated_prox(5))) {
+// 			counter_rotation = counter_rotation + 1;
 // 		}
 // 	} else if (get_calibrated_prox(0) < get_calibrated_prox(4)) {
 // 		//turn right
@@ -43,32 +34,27 @@
 // 	    right_motor_set_speed(-MOTOR_SPEED);
 
 // 	    //check the right rotation angle
-// 		if ((get_calibrated_prox(2) >= get_calibrated_prox(0)) && (get_calibrated_prox(4) >= get_calibrated_prox(0))) {
-// 			counter = counter + 1; 
+// 		if ((get_calibrated_prox(2) > get_calibrated_prox(0)) && (get_calibrated_prox(4) > get_calibrated_prox(0))) {
+// 			counter_rotation = counter_rotation + 1; 
 // 		}		
 // 	} 
 
 // }  
 
-// int16_t speed_correction(void) {
-// 	    int16_t speed_correction = 0;
-// 	    speed_correction = (get_public_begin() - get_public_end())/2 - (IMAGE_BUFFER_SIZE - 5)/2;
-// 	    return speed_correction;
-// }
+uint16_t most_frequent_tof(void) {
 
-uint16_t mean_distance_tof(void) {
     uint16_t distance_tof = 0;
-    uint16_t counter = 0;
-    uint16_t max_counter = 0;
+    uint32_t counter = 0;
+    uint32_t max_counter = 0;
     uint16_t tab[TAB_SIZE];
 
-    for (uint8_t i = 0; i < TAB_SIZE; ++i)
+    for (uint16_t i = 0; i < TAB_SIZE; ++i)
     {
         tab[i] = VL53L0X_get_dist_mm();
     }
 
-    for (uint8_t i = 0; i < TAB_SIZE; ++i) {
-        for(uint8_t j = 0; j < TAB_SIZE; ++j) {
+    for (uint16_t i = 0; i < TAB_SIZE; ++i) {
+        for(uint16_t j = 0; j < TAB_SIZE; ++j) {
             if((tab[i] - tab[j]) <= TOF_THRESHOLD || (tab[i] - tab[j]) >= -TOF_THRESHOLD) {
                 counter = counter + 1;
                 if (counter >= max_counter) {
@@ -84,11 +70,12 @@ uint16_t mean_distance_tof(void) {
     return distance_tof;
 }
 
+
 int16_t speed_correction(void) {
     
     int16_t speed_correction = 0;
 
-    if (get_calibrated_prox(2) > WALL_THRESHOLD || get_calibrated_prox(1) > 200 || get_calibrated_prox(0) > 100) {
+    if (get_calibrated_prox(2) > WALL_THRESHOLD || get_calibrated_prox(1) > 200 || get_calibrated_prox(0) > 150) {
         speed_correction = ROTATION_COEFF;
         return speed_correction;
     } else if (get_calibrated_prox(5) > WALL_THRESHOLD || get_calibrated_prox(6) > 200) {
@@ -100,79 +87,119 @@ int16_t speed_correction(void) {
     } 
 }
 
+void straight_line(void) {
+
+    static uint16_t counter_straight_line = 0;
+
+    if (VL53L0X_get_dist_mm() < 150) {   
+        if (counter_straight_line > 200) {
+            counter_straight_line = 0;
+            move_straight = 0;
+            regulator_start = 1;
+            corner = 0;
+        } else {
+            chprintf((BaseSequentialStream *)&SD3, "counter_straight_line = %d\n\r",counter_straight_line);
+            counter_straight_line = counter_straight_line + 1;
+            move_straight = 1;
+            regulator_start = 0;;
+            corner = 0;
+        }
+    } else {
+        move_straight = 1; 
+        regulator_start = 0;
+        corner = 0;
+    }
+}
+
+void speed_regulator(void) {
+
+    static uint16_t counter_stay_still = 0;
+    int16_t speed = 0;
+    speed = pi_regulator(VL53L0X_get_dist_mm(), GOAL_DISTANCE);
+
+    if (speed < 20) {
+        if (counter_stay_still < 1000) {
+            chprintf((BaseSequentialStream *)&SD3, "counter_stay_still = %d\n\r",counter_stay_still);
+            left_motor_set_speed(0);
+            right_motor_set_speed(0);  
+            counter_stay_still = counter_stay_still + 1; 
+            regulator_start = 1;
+            move_straight = 0;
+            corner = 0;            
+        } else {
+            counter_stay_still = 0;
+            regulator_start = 0;
+            corner = 1;
+            move_straight = 0;
+        }
+    } else {
+        left_motor_set_speed(speed - speed_correction()); 
+        right_motor_set_speed(speed + speed_correction());
+        chprintf((BaseSequentialStream *)&SD3, "speed = %d\n\r", speed);   
+        regulator_start = 1;
+        move_straight = 0;
+        corner = 0;
+    }
+}
+
+int16_t speed_correction_regulator(void){
+    int16_t speed_correction_regulator = 0;
+    speed_correction_regulator = (get_public_end() - get_public_begin())/2 - (IMAGE_BUFFER_SIZE - 5)/2;
+    return speed_correction_regulator;
+}
+
+
 static THD_WORKING_AREA(waRobotManagementThd, 512);
 static THD_FUNCTION(RobotManagementThd, arg) {
 
 	chRegSetThreadName("RobotManagement Thd");
 	(void)arg;
 
-	int16_t speed = 0;
-	uint8_t robot_case = 0;  
+    
+    static uint16_t counter_corner = 0;  
+    move_straight = 1; 
+  
 
     /* Reader thread loop.*/
     while (1) {
+
+        // speed = pi_regulator(VL53L0X_get_dist_mm(), GOAL_DISTANCE);
+        // left_motor_set_speed(speed + 0.5*speed_correction_regulator()); 
+        // right_motor_set_speed(speed - 0.5*speed_correction_regulator());
+
+        //chprintf((BaseSequentialStream *)&SD3, "begin=%ipixels end=%ipixels correction=%ddistance=%d\n\r", get_public_begin(), get_public_end(), speed_correction_regulator(), VL53L0X_get_dist_mm());
+        //chprintf((BaseSequentialStream *)&SD3, "end=%ipixels\n\r",public_end);
+
+
+        while (move_straight == 1 && regulator_start == 0 && corner == 0) {
+            straight_line(); 
+            left_motor_set_speed(MOTOR_SPEED - speed_correction()); 
+            right_motor_set_speed(MOTOR_SPEED + speed_correction());
+        } 
+
+        while (move_straight == 0 && regulator_start == 1 && corner == 0) { 
+            speed_regulator(); 
+        }
+
+
+        while (move_straight == 0 && regulator_start == 0 && corner == 1) {
+            if (counter_corner < 1000) {
+                chprintf((BaseSequentialStream *)&SD3, "counter_corner = %d\n\r",counter_corner);
+                left_motor_set_speed(MOTOR_SPEED - speed_correction());
+                right_motor_set_speed(MOTOR_SPEED + speed_correction());
+                counter_corner = counter_corner + 1; 
+                move_straight = 0;
+                regulator_start = 0;
+                corner = 1; 
+
+            } else {
+                counter_corner = 0;
+                move_straight = 1; 
+                regulator_start = 0;
+                corner = 0; 
+            }
+        }
         
-
-        // chprintf((BaseSequentialStream *)&SD3, "prox(0)␣=␣%d␣prox(1)␣=␣%d␣prox(2)␣=%d␣prox(3)␣=%d␣prox(4)␣=%d␣prox(5)␣=%d␣prox(6)␣=%d␣prox(7)␣=%d\r\n", 
-        //     get_calibrated_prox(0), get_calibrated_prox(1), get_calibrated_prox(2), get_calibrated_prox(3), get_calibrated_prox(4), 
-        //      get_calibrated_prox(5), get_calibrated_prox(6), get_calibrated_prox(7));
-
-        left_motor_set_speed(MOTOR_SPEED - speed_correction());
-        right_motor_set_speed(MOTOR_SPEED + speed_correction());
-
-        chprintf((BaseSequentialStream *)&SD3, "prox(0)␣=␣%d␣prox(7)␣=␣%d␣distance␣=␣%d\r\n", get_calibrated_prox(0), get_calibrated_prox(7), VL53L0X_get_dist_mm());
-
-
-    	switch (robot_case) {
-
-    		// case 0 :
-    		// 	if (counter > 300) {
-    		// 		counter = 0;
-            //      good_position = 1;
-    		// 		robot_case = 1;
-    		// 		break;
-    		// 	} else {
-    		// 		good_rotation();
-            //      good_position = 0;
-    		// 		robot_case = 0;
-    		// 		//chprintf((BaseSequentialStream *)&SD3, "counter␣=␣%d\r\n", counter);
-    		// 		break;
-    		// 	}
-
-    		case 0 :
-                if (mean_distance_tof() < 200) {
-                    //chprintf((BaseSequentialStream *)&SD3, "count␣=␣%d\r\n", counter_straight_line);
-                    left_motor_set_speed(MOTOR_SPEED - speed_correction());
-                    right_motor_set_speed(MOTOR_SPEED + speed_correction());
-                    robot_case = 0;
-                    break;
-                } else {
-                    robot_case = 1;
-                    break;
-                } 
-
-            case 1 :         
-    			if ((VL53L0X_get_dist_mm() - GOAL_DISTANCE) > ERROR_THRESHOLD) {
-    				speed = pi_regulator(VL53L0X_get_dist_mm(), GOAL_DISTANCE);
-                    left_motor_set_speed(speed - speed_correction()); 
-    				right_motor_set_speed(speed + speed_correction());
-					//chprintf((BaseSequentialStream *)&SD3, "counter␣=␣%d␣speed␣=␣%d␣robot_case␣=%d\r\n", counter, speed, robot_case); 
-					robot_case = 1;
-					break;
-    			} else {
-    				right_motor_set_speed(0);
-    				left_motor_set_speed(0);
-    				chThdSleepMilliseconds(1000);
-                    robot_case = 0;
-    				break; 
-    			}
-
-    		default : 
-    			left_motor_set_speed(0);
-    			right_motor_set_speed(0);
-    			break;
-
-    	}
     }
     	
 }
@@ -181,9 +208,3 @@ static THD_FUNCTION(RobotManagementThd, arg) {
 void robot_management_start(void){
 	chThdCreateStatic(waRobotManagementThd, sizeof(waRobotManagementThd), NORMALPRIO, RobotManagementThd, NULL);
 }
-
-
-
-
-
-
