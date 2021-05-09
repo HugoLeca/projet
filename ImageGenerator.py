@@ -2,7 +2,8 @@ import numpy
 from PIL import Image
 
 data = numpy.zeros((1024, 1024, 3), dtype=numpy.uint8)
-tab_music = numpy.array([1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1])
+#tab_music = numpy.array([1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1])
+tab_music = numpy.array([1, 1, 0 , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1])
 
 
 #constantes globales
