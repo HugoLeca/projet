@@ -14,7 +14,7 @@
 static uint16_t public_end = 0;
 static volatile uint16_t data[BAR_CODE_SIZE] = {0};
 static uint16_t public_begin = 0;
-
+static uint16_t bar_code = 0;
 //semaphore
 static BSEMAPHORE_DECL(image_ready_sem, TRUE);
 
@@ -84,12 +84,12 @@ void extract_limits_bis(uint8_t *buffer){
 }
 
 
-uint8_t extract_code_ter(uint8_t *buffer){
+uint16_t extract_code_ter(uint8_t *buffer){
 	uint16_t width_pixels = 0;
 	uint32_t average_barcode = 0;
 	uint8_t count_size_data = 0, count_size_bits = 0;
 	uint16_t new_begin = public_begin, old_begin = public_begin;
-	uint16_t i = public_begin;
+	uint16_t i = 0;
 
 
 	width_pixels = public_end - public_begin + 1;
@@ -100,6 +100,9 @@ uint8_t extract_code_ter(uint8_t *buffer){
 	average_diff = 10;
 	uint16_t volatile data_volatile[BAR_CODE_SIZE] = {0};
 
+
+
+	//data and data_volatile contain every step (positive or negative) on the image
 	while(i<(IMAGE_BUFFER_SIZE - WIDTH_SLOPE)){
 
 
@@ -122,23 +125,9 @@ uint8_t extract_code_ter(uint8_t *buffer){
 
 			data[count_size_data] = i;
 			count_size_data++;
-			i += 5*WIDTH_SLOPE;
 
-
-
-
-			/*section_width = (new_begin - old_begin +1);
-			old_begin = new_begin;
-
-			//find how many bits there are in that section
-			bits_size = get_size_bits(section_width);
-
-			//insert the value into data table
-			data[count_size_data] = bits_size;
-			count_size_bits += bits_size;
-			count_size_data++;
-			i += WIDTH_SLOPE;
-			*/
+			//moves i enough so that the algo doesn't detect the same step
+			i += 3*WIDTH_SLOPE;
 			
 		}
 		i++;
@@ -148,35 +137,54 @@ uint8_t extract_code_ter(uint8_t *buffer){
 		data_volatile[i]=data[i];
 	}
 
+	uint8_t null_rank = 0;
 
-
-
-
-/*	while(i < IMAGE_BUFFER_SIZE - WIDTH_SLOPE){
-		if((buffer[i] > average_barcode && buffer[i+WIDTH_SLOPE] < average_barcode) ||
-				(buffer[i] < average_barcode && buffer[i+WIDTH_SLOPE] > average_barcode)){
-			uint16_t section_width = 0;
-			uint8_t bits_size = 0;
-
-			//find the section new section width
-			new_begin = i;
-			section_width = (new_begin - old_begin +1);
-			old_begin = new_begin;
-
-			//find how many bits there are in that section
-			bits_size = get_size_bits(section_width);
-
-			//insert the value into data table
-			data[count_size_data] = bits_size;
-			count_size_bits += bits_size;
-			count_size_data++;
-			i += WIDTH_SLOPE;
+	for(uint8_t i = 0; i < BAR_CODE_SIZE ; i++){
+		if(data_volatile[i] == 0){
+			null_rank = i;
+			break;
 		}
-		i++;
+	}
 
-	}*/
+	public_begin = data_volatile[0];
+	public_end = data_volatile[null_rank - 1];
 
-	return count_size_bits;
+
+	//code filling algorithm
+	bool bit_value = true; 
+	uint8_t volatile nbre_bits = 0;
+	uint16_t volatile mask = 0;
+	uint16_t volatile code = 0;
+	uint8_t code_indice = 0;
+	uint8_t addition = 0;
+
+	//à supprimer
+	uint8_t volatile nbre_bits_tab[BAR_CODE_SIZE] = {0};
+
+	for(uint8_t i = 1; i < null_rank; i++){
+
+		nbre_bits = get_size_bits(data_volatile[i] - data_volatile[i-1]);
+		nbre_bits_tab[i] = nbre_bits;
+		addition = 1;
+
+		for(uint8_t j = 0; j < nbre_bits ; j++){
+			mask += addition;
+			addition = addition*2;
+		}
+
+
+		if(bit_value){
+			mask = mask << ((BAR_CODE_SIZE - nbre_bits) - code_indice);
+			code |= mask;
+
+		} 
+		mask = 0;
+		code_indice += nbre_bits;
+
+		bit_value = !bit_value;
+	}
+
+	return code;
 }
 
 uint8_t get_size_bits(uint16_t width){
@@ -190,17 +198,13 @@ uint8_t get_size_bits(uint16_t width){
 	if((float)width < 1.5*pixels_per_bit){
 		size = 1;
 		return size;
-	} 
-
-	for(uint8_t i = 1; i <= BAR_CODE_SIZE - 1; i++){
-		if ((float)width > 1.5*i*pixels_per_bit){
-			size = i+1;
-			return size;
+	} else {
+		for(uint8_t i = 1; i <= BAR_CODE_SIZE - 1; i++){
+			if ((float)width > i*pixels_per_bit + 0.5*pixels_per_bit){
+				size = i+1;
+			} else {break;}
 		}
 	}
-
-
-
 	return size;
 }
 
@@ -256,7 +260,7 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 		bool send_to_computer = true;
 
-		uint16_t code = 0;
+		uint16_t volatile code = 0;
 
 
 
@@ -273,38 +277,51 @@ static THD_FUNCTION(ProcessImage, arg) {
 			SendUint8ToComputer(image, IMAGE_BUFFER_SIZE);
 		}
 		//invert the bool
-		send_to_computer = !send_to_computer;
-		*/
-
-
-
-
-
-
+		send_to_computer = !send_to_computer;*/
 
 		//let's find the (public) end and begin variables
 		extract_limits_bis(image);
 
-		chprintf((BaseSequentialStream *)&SD3, "begin=%i pixels",public_begin);
-		chprintf((BaseSequentialStream *)&SD3, "end=%ipixels\r\n",public_end);
-
-
-		//let's stabilize the limits in public_begin and public_end
+		//chprintf((BaseSequentialStream *)&SD3, "begin=%i pixels",public_begin);
+		//chprintf((BaseSequentialStream *)&SD3, "end=%ipixels\r\n",public_end);
 
 
 
-		//using begin and end, let's extract the code seen by the camera
-		if(public_end != 630){
+		//code is send only if the hash is respected and if the code is recognized
+		// with sufficient repetability. i.e bit0(code) = 1, bit15(code) = 1, and compteur = 10.
+		uint8_t compteur = 0;
+		uint8_t compteur_stability = 0;
+		uint16_t temp_code = 0;
+		uint16_t mask_bit15 = 0b1000000000000000;
+		uint16_t mask_bit0  = 0b0000000000000001;
+		bool code_stable = true;
 
+
+		while(compteur < 10 && code_stable){
+			
 			code = extract_code_ter(image);
+			
+			if((code & mask_bit15) && (code & mask_bit0)){
+				if(code == temp_code){
+					compteur++;
+				} else {
+					temp_code = code;
+					compteur = 1;
+				}				
+			}
+			compteur_stability++;
 
-
-			//chprintf((BaseSequentialStream *)&SD3, "code=%ipixels\r\n",code);
-
-
-
+			if(compteur_stability > 100){
+				code_stable = false;
+				chprintf((BaseSequentialStream *)&SD3, "CODE_NOT_STABLE");
+				break;
+			}
 		}
 
+		if(code_stable){
+			bar_code = code;
+			chprintf((BaseSequentialStream *)&SD3, "barcode=%i\r\n",bar_code);
+		}
 	}
 }
 
@@ -318,6 +335,9 @@ uint16_t get_public_end(void){
 	return public_end;
 }
 
+uint16_t get_bar_code(void){
+	return bar_code;
+}
 
 void process_image_start(void){
 	chThdCreateStatic(waProcessImage, sizeof(waProcessImage), NORMALPRIO, ProcessImage, NULL);

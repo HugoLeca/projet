@@ -17,6 +17,7 @@
 #include <pi_regulator.h>
 #include <process_image.h>
 #include <test_audio.h>
+#include <code_to_music.h>
 
 void SendUint8ToComputer(uint8_t* data, uint16_t size) 
 {
@@ -48,6 +49,7 @@ int main(void)
     serial_start();
     //start the USB communication
     //usb_start();
+
     //starts the camera
     dcmi_start();
 	po8030_start();
@@ -57,12 +59,15 @@ int main(void)
 	//stars the threads for the pi regulator and the processing of the image
 	//pi_regulator_start();
 	process_image_start();
-    //start the DAC module
-   // dac_start();
-    //start the thread for playing melodies, internals or externals
-   // playMelodyStart();
+
+    //starts the DAC module
+    //dac_start();
+
+    //starts the thread for playing melodies, internals or externals
 
    // test_audio_external();
+   // playProjectStart();
+
 
 
 

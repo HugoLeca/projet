@@ -41,30 +41,6 @@ void test_audio_external(void){
 }
 
 
-// test de mm fonction mais avec un thread
-
-/*static THD_WORKING_AREA(waTestAudioThd, 526);
-static THD_FUNCTION(TestAudioThd, arg) {
-
-  chRegSetThreadName("TestAudio Thd");
-
-	(void)arg;
-
-
-
-	while(1){
-
-		playMelody(EXTERNAL_SONG, ML_WAIT_AND_CHANGE, &melody[0]);
-		waitMelodyHasFinished();
-		chThdSleepMilliseconds(WAIT_BETWEEN_SONGS_MS);
-	}
-}
-
-void TestAudioStart(void){
-
-	//create the thread
-	chThdCreateStatic(waTestAudioThd, sizeof(waTestAudioThd), NORMALPRIO, TestAudioThd, NULL);
-}*/
 
 
 

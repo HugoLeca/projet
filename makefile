@@ -12,7 +12,7 @@ GLOBAL_PATH = ../../../lib/e-puck2_main-processor
 CSRC += ./main.c          \
 		./pi_regulator.c  \
 		./process_image.c \
-		./test_audio.c    \
+		./code_to_music.c   \
 
 #Header folders to include
 INCDIR += ./$(GLOBAL_PATH)/src/audio \

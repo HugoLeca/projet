@@ -15,7 +15,7 @@ void extract_limits_bis(uint8_t *buffer);
 //uint16_t extract_code(uint8_t *buffer);
 
 //encore une autre méthode... renvoie le nombre de bits captés par la caméra.
-uint8_t extract_code_ter(uint8_t *buffer);
+uint16_t extract_code_ter(uint8_t *buffer);
 
 //revoie le nombre de bits dans la section de taille width
 uint8_t get_size_bits(uint16_t width);
@@ -26,6 +26,9 @@ uint16_t get_public_begin(void);
 
 //returns public_end, i.e le last pixel of the code
 uint16_t get_public_end(void);
+
+//return the bar code
+uint16_t get_bar_code(void);
 
 
 

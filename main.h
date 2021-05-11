@@ -11,8 +11,9 @@ extern "C" {
 
 
 //constants for the differents parts of the project
+#define MELODY_SIZE_MAX			20
 #define COUNTED_ENOUGH			5
-#define BAR_CODE_SIZE 			8
+#define BAR_CODE_SIZE 			16
 #define BLACK_THRESHOLD			50
 #define WHITE_THRESHOLD			100
 #define IMAGE_BUFFER_SIZE		640
