@@ -27,61 +27,56 @@ void extract_limits_bis(uint8_t *buffer){
 	
 	uint16_t   i = 0;
 	uint16_t   j = IMAGE_BUFFER_SIZE - WIDTH_SLOPE;
-	uint16_t   diff = 0, begin = 0, end = 0;
-	uint8_t stop = 0;
+	uint16_t   diff_begin = 0, diff_end = 0, begin = 0, end = 0;
+	uint8_t    stop = 0;
 	uint32_t   average_diff=0;
-
-
 
 	average_diff = 10;
 
 	//averaging the noise
-
-
-	
-
 	
 	//searching for a beginning
-	while(stop == 0 && i<(IMAGE_BUFFER_SIZE - WIDTH_SLOPE)){
+	while(i < 320){
 
-		if( abs(buffer[i]) > abs(buffer[i+WIDTH_SLOPE]) ){
-			diff = buffer[i] - buffer[i+WIDTH_SLOPE];
+		if(abs(buffer[i]) > abs(buffer[i+WIDTH_SLOPE])){
+			diff_begin = buffer[i] - buffer[i+WIDTH_SLOPE];
 		} else {
-			diff = buffer[i+WIDTH_SLOPE] - buffer[i];
+			diff_begin = buffer[i+WIDTH_SLOPE] - buffer[i];
 		}
 
-		if (diff > 3*average_diff){
-			begin = i + WIDTH_SLOPE;
-			stop = 1;
-		}
+		if (diff_begin > 3*average_diff){
+			diff_begin = 0; 
+			begin = i + WIDTH_SLOPE; 
+			//stop = 1;
+		} 
 		i++;
 	}
 
 	// if begin found, search for end
 
-	if(i < (IMAGE_BUFFER_SIZE - WIDTH_SLOPE)  && begin){
-		stop = 0;
+	//if(i < (IMAGE_BUFFER_SIZE - WIDTH_SLOPE)  && begin != 0){
+		//stop = 0;
 		
-		while(stop == 0 && j > WIDTH_SLOPE){
+		while(j > 400){
 
 			if( (buffer[j-WIDTH_SLOPE]) < (buffer[j]) ){
-				diff = buffer[j] - buffer[j-WIDTH_SLOPE];
+				diff_end = buffer[j] - buffer[j-WIDTH_SLOPE];
 			} else if((buffer[j-WIDTH_SLOPE]) > (buffer[j])) {
-				diff = buffer[j-WIDTH_SLOPE] - buffer[j];
-			} else { i = true;}
+				diff_end = buffer[j-WIDTH_SLOPE] - buffer[j];
+			} //else { i = true;}
 
-			if(diff > 4*average_diff && j != (IMAGE_BUFFER_SIZE - 2*WIDTH_SLOPE)){
+			if(diff_end > 3*average_diff){
+				diff_end = 0; 
 				end = j - WIDTH_SLOPE;
-				stop = 1;
+				//stop = 1;
 			}
 			j--;
 		}
-	}
+	//}
 
-	if(public_end != 630){
 	public_end = end;
 	public_begin = begin;
-	}
+
 }
 
 
@@ -282,8 +277,8 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 		//let's find the (public) end and begin variables
 		extract_limits_bis(image);
-		chprintf((BaseSequentialStream *)&SD3, "begin=%i pixels",public_begin);
-		chprintf((BaseSequentialStream *)&SD3, "end=%ipixels\r\n",public_end);
+		//chprintf((BaseSequentialStream *)&SD3, "begin=%i pixels",public_begin);
+		//chprintf((BaseSequentialStream *)&SD3, "end=%ipixels\r\n",public_end);
 
 
 		//let's stabilize the limits in public_begin and public_end
