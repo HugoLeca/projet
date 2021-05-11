@@ -121,7 +121,7 @@ void speed_regulator(void) {
 
     if (speed < 20) {
         if (counter_stay_still < 1500) {
-            chprintf((BaseSequentialStream *)&SD3, "begin=%d end=%d distance = %d correction = %d\n\r", get_public_begin(), get_public_end(), VL53L0X_get_dist_mm(), speed_correction_regulator());
+            chprintf((BaseSequentialStream *)&SD3, "begin=%d end=%d distance = %d correction = %d\n\r", get_public_begin_move(), get_public_end_move(), VL53L0X_get_dist_mm(), speed_correction_regulator());
             left_motor_set_speed(0);
             right_motor_set_speed(0);  
             counter_stay_still = counter_stay_still + 1; 
@@ -146,15 +146,15 @@ void speed_regulator(void) {
 int16_t speed_correction_regulator(void){
     int16_t speed_correction_regulator = 0;
     
-    if(get_public_begin() > 100 && get_public_end() > 400) {
+    if(get_public_begin_move() > 100 && get_public_end_move() > 400) {
         speed_correction_regulator = 0;
         return speed_correction_regulator;
 
-    } else if (get_public_begin() == 0 && get_public_end() != 0) {
+    } else if (get_public_begin_move() == 0 && get_public_end_move() != 0) {
         // turn left 
         speed_correction_regulator = ROTATION_COEFF;
         return speed_correction_regulator;
-    } else if (get_public_end() == 0 && get_public_begin() != 0) {
+    } else if (get_public_end_move() == 0 && get_public_begin_move() != 0) {
         //turn right
         speed_correction_regulator = -ROTATION_COEFF;
         return speed_correction_regulator;

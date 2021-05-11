@@ -12,8 +12,10 @@
 
 
 static uint16_t public_end = 0;
+static uint16_t public_end_move = 0;
 static volatile uint8_t data[BAR_CODE_SIZE] = {0};
 static uint16_t public_begin = 0;
+static uint16_t public_begin_move = 0; 
 
 //semaphore
 static BSEMAPHORE_DECL(image_ready_sem, TRUE);
@@ -22,8 +24,64 @@ static BSEMAPHORE_DECL(image_ready_sem, TRUE);
  *  Returns the line's width extracted from the image buffer given
  *  Returns 0 if line not found
  */
-
 void extract_limits_bis(uint8_t *buffer){
+	
+	uint16_t   i = 0;
+	uint16_t   j = IMAGE_BUFFER_SIZE - WIDTH_SLOPE;
+	uint16_t   diff = 0, begin = 0, end = 0;
+	uint8_t stop = 0;
+	uint32_t   average_diff=0;
+
+
+
+	average_diff = 10;
+
+	//averaging the noise
+
+	//searching for a beginning
+	while(stop == 0 && i<(IMAGE_BUFFER_SIZE - WIDTH_SLOPE)){
+
+		if( abs(buffer[i]) > abs(buffer[i+WIDTH_SLOPE]) ){
+			diff = buffer[i] - buffer[i+WIDTH_SLOPE];
+		} else {
+			diff = buffer[i+WIDTH_SLOPE] - buffer[i];
+		}
+
+		if (diff > 3*average_diff){
+			begin = i + WIDTH_SLOPE;
+			stop = 1;
+		}
+		i++;
+	}
+
+	// if begin found, search for end
+
+	if(i < (IMAGE_BUFFER_SIZE - WIDTH_SLOPE)  && begin){
+		stop = 0;
+		
+		while(stop == 0 && j > WIDTH_SLOPE){
+
+			if( (buffer[j-WIDTH_SLOPE]) < (buffer[j]) ){
+				diff = buffer[j] - buffer[j-WIDTH_SLOPE];
+			} else if((buffer[j-WIDTH_SLOPE]) > (buffer[j])) {
+				diff = buffer[j-WIDTH_SLOPE] - buffer[j];
+			} else { i = true;}
+
+			if(diff > 4*average_diff && j != (IMAGE_BUFFER_SIZE - 2*WIDTH_SLOPE)){
+				end = j - WIDTH_SLOPE;
+				stop = 1;
+			}
+			j--;
+		}
+	}
+
+	if(1){
+		public_end_move = end;
+		public_begin_move = begin;
+	}
+}
+
+void extract_limits_move(uint8_t *buffer){
 	
 	uint16_t   i = 0;
 	uint16_t   j = IMAGE_BUFFER_SIZE - WIDTH_SLOPE;
@@ -74,8 +132,8 @@ void extract_limits_bis(uint8_t *buffer){
 		}
 	//}
 
-	public_end = end;
-	public_begin = begin;
+	public_end_move = end;
+	public_begin_move = begin;
 
 }
 
@@ -308,6 +366,14 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 
 
+uint16_t get_public_begin_move(void){
+	return public_begin_move;
+}
+
+uint16_t get_public_end_move(void){
+	return public_end_move;
+}
+
 uint16_t get_public_begin(void){
 	return public_begin;
 }
@@ -315,7 +381,6 @@ uint16_t get_public_begin(void){
 uint16_t get_public_end(void){
 	return public_end;
 }
-
 
 void process_image_start(void){
 	chThdCreateStatic(waProcessImage, sizeof(waProcessImage), NORMALPRIO, ProcessImage, NULL);
