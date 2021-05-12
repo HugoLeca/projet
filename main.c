@@ -21,6 +21,7 @@
 #include <process_image.h>
 #include <robot_management.h>
 #include <test_audio.h>
+#include <code_to_music.h>
 
 messagebus_t bus;
 MUTEX_DECL(bus_lock);
