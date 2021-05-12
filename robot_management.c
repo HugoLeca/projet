@@ -93,8 +93,8 @@ void straight_line(void) {
 
     static uint16_t counter_straight_line = 0;
 
-    if (VL53L0X_get_dist_mm() < 80) {   
-        if (counter_straight_line < 200) {
+    if (VL53L0X_get_dist_mm() < 100) {   
+        if (counter_straight_line < 100) {
             chprintf((BaseSequentialStream *)&SD3, "counter_straight_line = %d\n\r",counter_straight_line);
             counter_straight_line = counter_straight_line + 1;
             move_straight = 1;
@@ -119,11 +119,11 @@ void speed_regulator(void) {
     int16_t speed = 0;
     speed = pi_regulator(VL53L0X_get_dist_mm(), GOAL_DISTANCE);
 
-    if (speed < 20) {
+    if (VL53L0X_get_dist_mm() - GOAL_DISTANCE < ERROR_THRESHOLD) {
         if (counter_stay_still < 1500) {
             chprintf((BaseSequentialStream *)&SD3, "begin=%d end=%d distance = %d correction = %d\n\r", get_public_begin_move(), get_public_end_move(), VL53L0X_get_dist_mm(), speed_correction_regulator());
-            left_motor_set_speed(0);
-            right_motor_set_speed(0);  
+            left_motor_set_speed(-0.5*speed_correction_regulator());
+            right_motor_set_speed(0.5*speed_correction_regulator());  
             counter_stay_still = counter_stay_still + 1; 
             regulator_start = 1;
             move_straight = 0;
@@ -135,8 +135,8 @@ void speed_regulator(void) {
             move_straight = 0;
         }
     } else {
-        left_motor_set_speed(speed*0.5 - speed_correction_regulator()); 
-        right_motor_set_speed(speed*0.5 + speed_correction_regulator());  
+        left_motor_set_speed(speed*0.6 - speed_correction_regulator()); 
+        right_motor_set_speed(speed*0.6 + speed_correction_regulator());  
         regulator_start = 1;
         move_straight = 0;
         corner = 0;
@@ -145,25 +145,24 @@ void speed_regulator(void) {
 
 int16_t speed_correction_regulator(void){
     int16_t speed_correction_regulator = 0;
+    uint8_t good_position = 0;
     
-    if(get_public_begin_move() > 100 && get_public_end_move() > 400) {
+    if(get_public_begin_move() > 80 && get_public_end_move() > 400 && good_position == 0) {
         speed_correction_regulator = 0;
+        good_position = 1;
         return speed_correction_regulator;
-
-    } else if (get_public_begin_move() == 0 && get_public_end_move() != 0) {
-        // turn left 
-        speed_correction_regulator = ROTATION_COEFF;
-        return speed_correction_regulator;
-    } else if (get_public_end_move() == 0 && get_public_begin_move() != 0) {
-        //turn right
+    } else if (get_public_begin_move() == 0 && get_public_end_move() > 500 && good_position == 0) {
+        // turn right 
         speed_correction_regulator = -ROTATION_COEFF;
+        return speed_correction_regulator;
+    } else if (get_public_end_move() == 0  && get_public_begin_move() > 0 && good_position == 0) {
+        //turn left
+        speed_correction_regulator = ROTATION_COEFF;
         return speed_correction_regulator;
     } else {
         speed_correction_regulator = 0;
         return speed_correction_regulator; 
     }
-
-
 
 }
 
@@ -187,7 +186,8 @@ static THD_FUNCTION(RobotManagementThd, arg) {
         // left_motor_set_speed(speed - speed_correction_regulator()); 
         // right_motor_set_speed(speed + speed_correction_regulator());
 
-        // chprintf((BaseSequentialStream *)&SD3, "begin=%dend=%ddistance=%dcorrection=%d\n\r", get_public_begin(), get_public_end(), VL53L0X_get_dist_mm(), speed_correction_regulator());
+        // chprintf((BaseSequentialStream *)&SD3, "begin=%dend=%dspeed_correction=%d\n\r", 
+        //     get_public_begin_move(), get_public_end_move(), speed_correction_regulator());
         // chThdSleepMilliseconds(500);
 
         while (move_straight == 1 && regulator_start == 0 && corner == 0) {
@@ -202,7 +202,7 @@ static THD_FUNCTION(RobotManagementThd, arg) {
 
 
         while (move_straight == 0 && regulator_start == 0 && corner == 1) {
-            if (counter_corner < 1000) {
+            if (counter_corner < 1500) {
                 chprintf((BaseSequentialStream *)&SD3, "counter_corner = %d\n\r",counter_corner);
                 left_motor_set_speed(MOTOR_SPEED - speed_correction());
                 right_motor_set_speed(MOTOR_SPEED + speed_correction());

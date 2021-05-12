@@ -76,8 +76,8 @@ void extract_limits_bis(uint8_t *buffer){
 	}
 
 	if(1){
-		public_end_move = end;
-		public_begin_move = begin;
+		public_end = end;
+		public_begin = begin;
 	}
 }
 
@@ -86,7 +86,7 @@ void extract_limits_move(uint8_t *buffer){
 	uint16_t   i = 0;
 	uint16_t   j = IMAGE_BUFFER_SIZE - WIDTH_SLOPE;
 	uint16_t   diff_begin = 0, diff_end = 0, begin = 0, end = 0;
-	uint8_t    stop = 0;
+	uint8_t    stop_begin = 0, stop_end = 0;
 	uint32_t   average_diff=0;
 
 	average_diff = 10;
@@ -94,7 +94,7 @@ void extract_limits_move(uint8_t *buffer){
 	//averaging the noise
 	
 	//searching for a beginning
-	while(i < 320){
+	while (i < 120 && stop_begin == 0){
 
 		if(abs(buffer[i]) > abs(buffer[i+WIDTH_SLOPE])){
 			diff_begin = buffer[i] - buffer[i+WIDTH_SLOPE];
@@ -105,7 +105,7 @@ void extract_limits_move(uint8_t *buffer){
 		if (diff_begin > 3*average_diff){
 			diff_begin = 0; 
 			begin = i + WIDTH_SLOPE; 
-			//stop = 1;
+			stop_begin = 1;
 		} 
 		i++;
 	}
@@ -115,7 +115,7 @@ void extract_limits_move(uint8_t *buffer){
 	//if(i < (IMAGE_BUFFER_SIZE - WIDTH_SLOPE)  && begin != 0){
 		//stop = 0;
 		
-		while(j > 400){
+		while(j > 500 && stop_end == 0){
 
 			if( (buffer[j-WIDTH_SLOPE]) < (buffer[j]) ){
 				diff_end = buffer[j] - buffer[j-WIDTH_SLOPE];
@@ -126,7 +126,7 @@ void extract_limits_move(uint8_t *buffer){
 			if(diff_end > 3*average_diff){
 				diff_end = 0; 
 				end = j - WIDTH_SLOPE;
-				//stop = 1;
+				stop_end = 1;
 			}
 			j--;
 		}
@@ -329,13 +329,8 @@ static THD_FUNCTION(ProcessImage, arg) {
 		send_to_computer = !send_to_computer;
 		*/
 
-
-
-
-
-
-
 		//let's find the (public) end and begin variables
+		extract_limits_move(image); 
 		extract_limits_bis(image);
 		//chprintf((BaseSequentialStream *)&SD3, "begin=%i pixels",public_begin);
 		//chprintf((BaseSequentialStream *)&SD3, "end=%ipixels\r\n",public_end);
@@ -350,16 +345,12 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 			code = extract_code_ter(image);
 
-
 			//chprintf((BaseSequentialStream *)&SD3, "code=%ipixels\r\n",code);
-
-
 
 		}
 
 	}
 }
-
 
 
 uint16_t get_public_begin_move(void){
