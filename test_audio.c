@@ -3,6 +3,7 @@
 #include <test_audio.h>
 #include <play_melody.h>
 
+#include <main.h>
 
 
 //creation d'une suite de notes exterieur au fichier play_melody.c/.h
@@ -23,7 +24,7 @@ static const melody_t melody[1] = {
   //gamme de do majeur
   {
     .notes = gamme_do_majeur_melody,
-    .tempo = gamme_do_majeur_tempo ,
+    .tempo = gamme_do_majeur_tempo,
     .length = sizeof(gamme_do_majeur_melody)/sizeof(uint16_t),
   },
 

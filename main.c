@@ -12,18 +12,24 @@
 #include <main.h>
 #include <motors.h>
 #include <camera/po8030.h>
+#include <sensors/VL53L0X/VL53L0X.h>
+#include <sensors/proximity.h>
+#include <audio/audio_thread.h>
+#include <audio/play_melody.h>
+#include <msgbus/messagebus.h>
 #include <chprintf.h>
 
 #include <pi_regulator.h>
 #include <process_image.h>
+#include <process_distance.h>
 #include <test_audio.h>
 #include <code_to_music.h>
 
 void SendUint8ToComputer(uint8_t* data, uint16_t size) 
 {
-	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)"START", 5);
-	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)&size, sizeof(uint16_t));
-	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)data, size);
+	chSequentialStreamWrite((BaseSequentialStream *)&SDU1, (uint8_t*)"START", 5);
+	chSequentialStreamWrite((BaseSequentialStream *)&SDU1, (uint8_t*)&size, sizeof(uint16_t));
+	chSequentialStreamWrite((BaseSequentialStream *)&SDU1, (uint8_t*)data, size);
 }
 
 static void serial_start(void)
@@ -54,7 +60,6 @@ int main(void)
     dcmi_start();
 	po8030_start();
 	//inits the motors
-	//motors_init();
 
     //starts the DAC module
     dac_start();
