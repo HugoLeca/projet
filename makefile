@@ -14,7 +14,7 @@ CSRC += ./main.c          \
 		./process_image.c \
 		./process_distance.c \
 		./test_audio.c    \
-		./code_to_music \
+		./code_to_music.c \
 
 #Header folders to include
 INCDIR += ./$(GLOBAL_PATH)/src \

@@ -46,4 +46,7 @@ condition_variable_t* get_barcode_condvar(void);
 //le code barre, retourne faux sinon
 int get_section_value(uint16_t average_barcode, uint16_t average_section);
 
+uint16_t* get_melody_ptr(void);
+bool get_process_image_done(void);
+
 #endif /* PROCESS_IMAGE_H */

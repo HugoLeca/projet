@@ -155,19 +155,19 @@ uint16_t code_to_durations(uint16_t code){
 	switch(code){
 
 		case 0:
-			duration = 500;
+			duration = 150;
 			break;
 
 		case 1:
-			duration = 1000;
+			duration = 300;
 			break;
 
 		case 2:
-			duration = 2000;
+			duration = 600;
 			break;
 
 		case 3:
-			duration = 4000;
+			duration = 1200;
 			break;
 	}
 
@@ -177,18 +177,18 @@ uint16_t code_to_durations(uint16_t code){
 
 
 
-
+/*
 static uint16_t code[] = {
 	
 	0b1000000000010001, 0b1001000000101001, 0b1001110001001001, 0b1010110001100001,
 
-};
+};*/
 
-static uint16_t code[] = {0};
+static uint16_t code[MELODY_SIZE_MAX] = {0};
 
 
 
-void get_durations_from_code(uint16_t* buffer){
+void get_durations_from_code(uint16_t* buffer_durations, uint16_t* buffer_code){
 	uint16_t mask_durations_1 = 0;
 	uint16_t mask_durations_2 = 0;
 
@@ -209,15 +209,15 @@ void get_durations_from_code(uint16_t* buffer){
 		if(indice_code == (sizeof(code)/2)){
 			stop = 1;
 		} else {
-			temp_durations_1 = (mask_durations_1 & code[indice_code]) >> 8;
-			temp_durations_2 = (mask_durations_2 & code[indice_code]) >> 1;
+			temp_durations_1 = (mask_durations_1 & buffer_code[indice_code]) >> 8;
+			temp_durations_2 = (mask_durations_2 & buffer_code[indice_code]) >> 1;
 
 			if(indice_durations == 6){
 				stop = 0;
 			}
-			buffer[indice_durations] = code_to_durations(temp_durations_1);
+			buffer_durations[indice_durations] = code_to_durations(temp_durations_1);
 			indice_durations++;
-			buffer[indice_durations] = code_to_durations(temp_durations_2);
+			buffer_durations[indice_durations] = code_to_durations(temp_durations_2);
 			indice_durations++;
 
 		}
@@ -226,7 +226,7 @@ void get_durations_from_code(uint16_t* buffer){
 }
 
 
-void get_melody_from_code(uint16_t* buffer){
+void get_melody_from_code(uint16_t* buffer_melody, uint16_t* buffer_code){
 
 	uint16_t mask_note_1 = 0;
 	uint16_t mask_note_2 = 0;
@@ -250,13 +250,13 @@ void get_melody_from_code(uint16_t* buffer){
 		if(indice_code == (sizeof(code)/2)){
 			stop = 1;
 		} else {
-			temp_note_1 = (mask_note_1 & code[indice_code]) >> 10;
-			temp_note_2 = (mask_note_2 & code[indice_code]) >> 3;
+			temp_note_1 = (mask_note_1 & buffer_code[indice_code]) >> 10;
+			temp_note_2 = (mask_note_2 & buffer_code[indice_code]) >> 3;
 
 
-			buffer[indice_notes] = code_to_frequency(temp_note_1);
+			buffer_melody[indice_notes] = code_to_frequency(temp_note_1);
 			indice_notes++;
-			buffer[indice_notes] = code_to_frequency(temp_note_2);
+			buffer_melody[indice_notes] = code_to_frequency(temp_note_2);
 			indice_notes++;
 
 		}
@@ -278,56 +278,7 @@ void wait_code_bar_ready(void) {
 
 }
 */
-static THD_WORKING_AREA(waPlayProjectThd, 1028);
-static THD_FUNCTION(PlayProjectThd, arg) {
-
-  chRegSetThreadName("PlayMelody Thd");
-
-	(void)arg;
-
-	uint16_t project_notes[MELODY_SIZE_MAX] = {0};
-	uint16_t project_durations[MELODY_SIZE_MAX] = {0};
-
-	uint16_t* notes_ptr = project_notes;
-	uint16_t* durations_ptr = project_durations;
-
-
-
-	//waits until a bar_code has been received
-	//wait_code_bar_ready();
-
-
-	//code[0] = get_bar_code();
-
-	
-
-	get_melody_from_code(notes_ptr);
-	get_durations_from_code(durations_ptr);
-
-	while(1){
-
-		
-
-		for(uint8_t ThisNote = 0 ; ThisNote < 8 ; ThisNote++){
-
-			playNote(project_notes[ThisNote], project_durations[ThisNote]);
-
-			uint16_t pauseBetweenNotes = 100;
-			chThdSleepMilliseconds(pauseBetweenNotes);
-		}
-
-		chThdSleepMilliseconds(2000);
-
-
-
-	}
-}
-
-void playProjectStart(void){
-
-	//create the thread
-	chThdCreateStatic(waPlayProjectThd, sizeof(waPlayProjectThd), NORMALPRIO, PlayProjectThd, NULL);
-}
+//static THD_WORKING_AREA(waPlayProjectThd, 256);
 
 
 

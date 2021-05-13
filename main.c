@@ -73,7 +73,7 @@ int main(void)
     //starts the thread for playing melodies, internals or externals
 
    // test_audio_external();
-   playProjectStart();
+   //playProjectStart();
 
 
 

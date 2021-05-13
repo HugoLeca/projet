@@ -25,6 +25,9 @@ static BSEMAPHORE_DECL(image_ready_sem, TRUE);
 /*static MUTEX_DECL(bar_code_lock);
 static CONDVAR_DECL(bar_code_condvar);
 */
+static bool process_image_done = false;
+static uint16_t final_code[MELODY_SIZE_MAX] = {0};
+static uint8_t code_indice_cnt;
 
 
 
@@ -243,7 +246,7 @@ static THD_FUNCTION(CaptureImage, arg) {
 }
 
 
-static THD_WORKING_AREA(waProcessImage, 3000);
+static THD_WORKING_AREA(waProcessImage, 1028);
 static THD_FUNCTION(ProcessImage, arg) {
 
     chRegSetThreadName(__FUNCTION__);
@@ -259,7 +262,7 @@ static THD_FUNCTION(ProcessImage, arg) {
 	systime_t new_time;
 
 
-    while(!code_detected){
+    while(1){
 
     	time = chVTGetSystemTime();
     	//waits until an image has been captured
@@ -344,8 +347,68 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 			code_detected = true;
 
+			final_code[code_indice_cnt] = bar_code;
+			code_indice_cnt++;
+
+			chThdSleepMilliseconds(4000);
+
+
+
+			uint8_t null_rank = 0;
+			for(uint8_t i = 0; i < MELODY_SIZE_MAX ; i++){
+				if(final_code[i] == 0){
+					null_rank = i;
+					break;
+				}
+			}
+
+
+
+			if(final_code[null_rank - 1] == 0b1000000000000001){
+
+
+				uint16_t project_notes[MELODY_SIZE_MAX] = {0};
+				uint16_t project_durations[MELODY_SIZE_MAX] = {0};
+
+				uint16_t* notes_ptr = project_notes;
+				uint16_t* durations_ptr = project_durations;
+
+				get_melody_from_code(notes_ptr, final_code);
+				get_durations_from_code(durations_ptr, final_code);
+
+
+				process_image_done = true;
+
+
+
+				uint8_t notes_null_rank = 0;
+				for(uint8_t i = 0; i < MELODY_SIZE_MAX ; i++){
+					if(project_notes[i] == 0){
+						notes_null_rank = i;
+						break;
+					}
+				}
+
+				//enters an infinite loop
+
+				while(1){
+					for(uint8_t ThisNote = 0 ; ThisNote < notes_null_rank ; ThisNote++){
+
+						if(project_notes[ThisNote] == PAUSE){
+							__asm__ volatile ("nop");
+						} else{
+							playNote(project_notes[ThisNote], project_durations[ThisNote]);
+						}
+						
+
+					uint16_t pauseBetweenNotes = 50;
+					chThdSleepMilliseconds(pauseBetweenNotes);
+					}
+				}
+			}
+
+
 			chThdYield();
-			chThdSleepMilliseconds(2000);
 
 
 			//chMtxUnlock(&bar_code_lock);
@@ -376,6 +439,14 @@ uint16_t get_bar_code(void){
 	return bar_code;
 }
 
+bool get_process_image_done(void){
+	return process_image_done;
+}
+
+uint16_t* get_melody_ptr(void){
+
+	return &(final_code[0]);
+}
 /*condition_variable_t* get_barcode_condvar(void){
 	return &bar_code_condvar;
 }
@@ -386,6 +457,6 @@ mutex_t* get_barcode_mtx(void){
 */
 
 void process_image_start(void){
-	chThdCreateStatic(waProcessImage, sizeof(waProcessImage), NORMALPRIO +2, ProcessImage, NULL);
-	chThdCreateStatic(waCaptureImage, sizeof(waCaptureImage), NORMALPRIO +2, CaptureImage, NULL);
+	chThdCreateStatic(waProcessImage, sizeof(waProcessImage), NORMALPRIO, ProcessImage, NULL);
+	chThdCreateStatic(waCaptureImage, sizeof(waCaptureImage), NORMALPRIO, CaptureImage, NULL);
 }
