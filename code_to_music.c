@@ -184,7 +184,7 @@ static uint16_t code[] = {
 
 };
 
-/*static uint16_t code[] = {0};*/
+static uint16_t code[] = {0};
 
 
 

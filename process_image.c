@@ -344,6 +344,10 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 			code_detected = true;
 
+			chThdYield();
+			chThdSleepMilliseconds(2000);
+
+
 			//chMtxUnlock(&bar_code_lock);
 			//signal que un code barre a été trouvé
 			//chCondSignal(&bar_code_condvar);
@@ -382,6 +386,6 @@ mutex_t* get_barcode_mtx(void){
 */
 
 void process_image_start(void){
-	chThdCreateStatic(waProcessImage, sizeof(waProcessImage), NORMALPRIO, ProcessImage, NULL);
-	chThdCreateStatic(waCaptureImage, sizeof(waCaptureImage), NORMALPRIO, CaptureImage, NULL);
+	chThdCreateStatic(waProcessImage, sizeof(waProcessImage), NORMALPRIO +2, ProcessImage, NULL);
+	chThdCreateStatic(waCaptureImage, sizeof(waCaptureImage), NORMALPRIO +2, CaptureImage, NULL);
 }
