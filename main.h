@@ -22,7 +22,7 @@ extern "C" {
 #define ROTATION_THRESHOLD		10
 #define ROTATION_COEFF			300 
 #define PXTOCM					1570.0f //experimental value
-#define GOAL_DISTANCE 			60.0f
+#define GOAL_DISTANCE 			70.0f
 #define MAX_DISTANCE 			25.0f
 #define ERROR_THRESHOLD			3.0f	
 #define KP						30.0f

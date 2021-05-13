@@ -139,7 +139,7 @@ uint16_t code_to_frequency(uint16_t note){
 			break;
 
 		case 31:
-			frequency = PAUSE;
+			//frequency = PAUSE;
 			break;
 	}
 	return frequency;

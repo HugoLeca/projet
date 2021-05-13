@@ -213,7 +213,7 @@ uint16_t extract_code_ter(uint8_t *buffer){
 	uint8_t code_indice = 0;
 	uint8_t addition = 0;
 
-	//à supprimer
+	//ï¿½ supprimer
 	uint8_t volatile nbre_bits_tab[BAR_CODE_SIZE] = {0};
 
 	for(uint8_t i = 1; i < null_rank; i++){
@@ -334,7 +334,9 @@ static THD_FUNCTION(ProcessImage, arg) {
 		send_to_computer = !send_to_computer;*/
 
 		//let's find the (public) end and begin variables
-		extract_limits_move(image); 
+		//extract_limits_move(image); 
+		
+
 		extract_limits_bis(image);
 		//chprintf((BaseSequentialStream *)&SD3, "begin=%i pixels",public_begin);
 		//chprintf((BaseSequentialStream *)&SD3, "end=%ipixels\r\n",public_end);
@@ -368,14 +370,15 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 			if(compteur_stability > 100){
 				code_stable = false;
-				chprintf((BaseSequentialStream *)&SD3, "CODE_NOT_STABLE");
+				//chprintf((BaseSequentialStream *)&SD3, "CODE_NOT_STABLE");
 				break;
 			}
 		}
 
 		if(code_stable){
 			bar_code = code;
-			chprintf((BaseSequentialStream *)&SD3, "barcode=%i\r\n",bar_code);
+			
+			chprintf((BaseSequentialStream *)&SDU1, "barcode=%i\r\n",bar_code);
 		}
 	}
 }

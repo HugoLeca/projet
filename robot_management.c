@@ -14,7 +14,7 @@
 
 static uint8_t regulator_start = 0;
 static uint8_t corner = 0; 
-static uint8_t move_straight = 0; 
+static uint8_t move_straight = 1; 
 
 
 // void good_rotation(void){ 
@@ -121,7 +121,7 @@ void speed_regulator(void) {
 
     if (VL53L0X_get_dist_mm() - GOAL_DISTANCE < ERROR_THRESHOLD) {
         if (counter_stay_still < 1500) {
-            chprintf((BaseSequentialStream *)&SD3, "begin=%d end=%d distance = %d correction = %d\n\r", get_public_begin_move(), get_public_end_move(), VL53L0X_get_dist_mm(), speed_correction_regulator());
+            chprintf((BaseSequentialStream *)&SD3, "begin=%d end=%d code = %d\n\r", get_public_begin_move(), get_public_end_move(), get_bar_code());
             left_motor_set_speed(-0.5*speed_correction_regulator());
             right_motor_set_speed(0.5*speed_correction_regulator());  
             counter_stay_still = counter_stay_still + 1; 
@@ -174,8 +174,7 @@ static THD_FUNCTION(RobotManagementThd, arg) {
 	(void)arg;
 
     
-    static uint16_t counter_corner = 0;  
-    move_straight = 1; 
+    static uint16_t counter_corner = 0;   
     int16_t speed = 0;
   
 
