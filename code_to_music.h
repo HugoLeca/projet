@@ -12,6 +12,9 @@ void get_durations_from_code(uint16_t* buffer);
 //creation du thread
 void playProjectStart(void);
 
+//
+//void wait_code_bar_ready(void);
+
 
 
 

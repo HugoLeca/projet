@@ -11,6 +11,8 @@ extern "C" {
 
 
 //constants for the differents parts of the project
+#define BIP_FREQU				4186
+#define BIP_DURATION			50
 #define MELODY_SIZE_MAX			20
 #define COUNTED_ENOUGH			5
 #define BAR_CODE_SIZE 			16

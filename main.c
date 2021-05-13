@@ -65,7 +65,7 @@ int main(void)
 	//inits the motors
 	motors_init();
 	//starts the audio
-	//dac_start();
+	dac_start();
 	//starts the threads for the proximity sensors 
 	proximity_start();
 	calibrate_ir();
