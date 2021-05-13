@@ -30,7 +30,17 @@ uint16_t get_public_end(void);
 //return the bar code
 uint16_t get_bar_code(void);
 
+//returns the adress of bar_code_ready_sem so that playProjectThd in code_to_music file
+/*//can access this ressource
+binary_semaphore_t* get_bar_code_sem(void);
+*/
 
+//scheduling functions
+
+
+/*mutex_t* get_barcode_mtx(void);
+condition_variable_t* get_barcode_condvar(void);
+*/
 
 //retourne vraie si la moyenne de la section est inferrieur a  la moyenne de tout
 //le code barre, retourne faux sinon

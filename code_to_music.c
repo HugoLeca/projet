@@ -4,7 +4,7 @@
 #include <play_melody.h>
 #include <code_to_music.h>
 #include <main.h>
-
+#include <process_image.h>
 
 
 
@@ -184,6 +184,8 @@ static uint16_t code[] = {
 
 };
 
+/*static uint16_t code[] = {0};*/
+
 
 
 void get_durations_from_code(uint16_t* buffer){
@@ -262,7 +264,20 @@ void get_melody_from_code(uint16_t* buffer){
 	}
 }
 
+/*
+void wait_code_bar_ready(void) {
 
+	condition_variable_t* bar_code_condvar = get_barcode_condvar();
+	mutex_t* bar_code_lock = get_barcode_mtx();
+
+	//waits until a barcode has been captured
+    chMtxLock(&bar_code_lock);
+    chCondWait(&bar_code_condvar);
+    chMtxUnlock(&bar_code_lock);
+
+
+}
+*/
 static THD_WORKING_AREA(waPlayProjectThd, 1028);
 static THD_FUNCTION(PlayProjectThd, arg) {
 
@@ -276,6 +291,14 @@ static THD_FUNCTION(PlayProjectThd, arg) {
 	uint16_t* notes_ptr = project_notes;
 	uint16_t* durations_ptr = project_durations;
 
+
+
+	//waits until a bar_code has been received
+	//wait_code_bar_ready();
+
+
+	//code[0] = get_bar_code();
+
 	
 
 	get_melody_from_code(notes_ptr);
@@ -283,7 +306,7 @@ static THD_FUNCTION(PlayProjectThd, arg) {
 
 	while(1){
 
-
+		
 
 		for(uint8_t ThisNote = 0 ; ThisNote < 8 ; ThisNote++){
 

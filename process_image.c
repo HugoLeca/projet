@@ -2,11 +2,15 @@
 #include "hal.h"
 #include <chprintf.h>
 #include <usbcfg.h>
+#include <stdlib.h>
 
 #include <main.h>
 #include <camera/po8030.h>
 
 #include <process_image.h>
+#include <play_melody.h>
+
+
 
 
 
@@ -15,8 +19,14 @@ static uint16_t public_end = 0;
 static volatile uint16_t data[BAR_CODE_SIZE] = {0};
 static uint16_t public_begin = 0;
 static uint16_t bar_code = 0;
-//semaphore
+//semaphores
 static BSEMAPHORE_DECL(image_ready_sem, TRUE);
+//static BSEMAPHORE_DECL(bar_code_ready_sem, TRUE);
+/*static MUTEX_DECL(bar_code_lock);
+static CONDVAR_DECL(bar_code_condvar);
+*/
+
+
 
 /*
  *  Returns the line's width extracted from the image buffer given
@@ -95,7 +105,7 @@ uint16_t extract_code_ter(uint8_t *buffer){
 	width_pixels = public_end - public_begin + 1;
 
 	uint16_t average_diff = 0;
-	uint16_t diff = 0;
+	uint16_t volatile diff = 0;
 
 	average_diff = 10;
 	uint16_t volatile data_volatile[BAR_CODE_SIZE] = {0};
@@ -233,7 +243,7 @@ static THD_FUNCTION(CaptureImage, arg) {
 }
 
 
-static THD_WORKING_AREA(waProcessImage, 2048);
+static THD_WORKING_AREA(waProcessImage, 3000);
 static THD_FUNCTION(ProcessImage, arg) {
 
     chRegSetThreadName(__FUNCTION__);
@@ -241,13 +251,15 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 	uint8_t *img_buff_ptr; 
 	uint8_t image[IMAGE_BUFFER_SIZE] = {0};
+	bool code_detected = false;
 
 	
 
 	systime_t time;
+	systime_t new_time;
 
 
-    while(1){
+    while(!code_detected){
 
     	time = chVTGetSystemTime();
     	//waits until an image has been captured
@@ -271,13 +283,16 @@ static THD_FUNCTION(ProcessImage, arg) {
 		//takes nothing from the second byte
 		image[i/2] = (uint8_t)img_buff_ptr[i]&0xF8;
 		}
-
-		/*if(send_to_computer){
+		/*
+		if(send_to_computer){
 			//sends to the computer the image
 			SendUint8ToComputer(image, IMAGE_BUFFER_SIZE);
 		}
 		//invert the bool
-		send_to_computer = !send_to_computer;*/
+		send_to_computer = !send_to_computer;
+		*/
+
+
 
 		//let's find the (public) end and begin variables
 		extract_limits_bis(image);
@@ -290,14 +305,14 @@ static THD_FUNCTION(ProcessImage, arg) {
 		//code is send only if the hash is respected and if the code is recognized
 		// with sufficient repetability. i.e bit0(code) = 1, bit15(code) = 1, and compteur = 10.
 		uint8_t compteur = 0;
-		uint8_t compteur_stability = 0;
+		uint16_t compteur_stability = 0;
 		uint16_t temp_code = 0;
 		uint16_t mask_bit15 = 0b1000000000000000;
 		uint16_t mask_bit0  = 0b0000000000000001;
 		bool code_stable = true;
 
 
-		while(compteur < 10 && code_stable){
+		while(compteur < 50 && code_stable){
 			
 			code = extract_code_ter(image);
 			
@@ -311,7 +326,7 @@ static THD_FUNCTION(ProcessImage, arg) {
 			}
 			compteur_stability++;
 
-			if(compteur_stability > 100){
+			if(compteur_stability > 1000){
 				code_stable = false;
 				chprintf((BaseSequentialStream *)&SD3, "CODE_NOT_STABLE");
 				break;
@@ -319,8 +334,26 @@ static THD_FUNCTION(ProcessImage, arg) {
 		}
 
 		if(code_stable){
+			
+			//chMtxLock(&bar_code_lock);
+
 			bar_code = code;
 			chprintf((BaseSequentialStream *)&SD3, "barcode=%i\r\n",bar_code);
+
+			playNote(BIP_FREQU, BIP_DURATION);
+
+			code_detected = true;
+
+			//chMtxUnlock(&bar_code_lock);
+			//signal que un code barre a été trouvé
+			//chCondSignal(&bar_code_condvar);
+
+			//signals the bar_code has been captured
+			//chBSemSignal(&bar_code_ready_sem);
+
+			//new_time = chVTGetSystemTime();
+			//chprintf((BaseSequentialStream *)&SD3, "time_to_finish_thread=%ld\r\n",new_time - time);
+
 		}
 	}
 }
@@ -338,6 +371,15 @@ uint16_t get_public_end(void){
 uint16_t get_bar_code(void){
 	return bar_code;
 }
+
+/*condition_variable_t* get_barcode_condvar(void){
+	return &bar_code_condvar;
+}
+
+mutex_t* get_barcode_mtx(void){
+	return &bar_code_lock;
+}
+*/
 
 void process_image_start(void){
 	chThdCreateStatic(waProcessImage, sizeof(waProcessImage), NORMALPRIO, ProcessImage, NULL);

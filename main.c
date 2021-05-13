@@ -56,17 +56,19 @@ int main(void)
 	//inits the motors
 	//motors_init();
 
+    //starts the DAC module
+    dac_start();
+
 	//stars the threads for the pi regulator and the processing of the image
 	//pi_regulator_start();
 	process_image_start();
 
-    //starts the DAC module
-    //dac_start();
+
 
     //starts the thread for playing melodies, internals or externals
 
    // test_audio_external();
-   // playProjectStart();
+   //playProjectStart();
 
 
 
