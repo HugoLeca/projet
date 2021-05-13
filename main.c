@@ -76,7 +76,7 @@ int main(void)
 	//starts the thread for the pi regulator
 	//pi_regulator_start();
 	//starts the thread for the robot
-	//robot_management_start();
+	robot_management_start();
 
 	process_image_start();
 

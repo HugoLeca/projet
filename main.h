@@ -26,7 +26,7 @@ extern "C" {
 #define PXTOCM					1570.0f //experimental value
 #define GOAL_DISTANCE 			70.0f
 #define MAX_DISTANCE 			25.0f
-#define ERROR_THRESHOLD			3.0f	
+#define ERROR_THRESHOLD			4.0f	
 #define KP						30.0f
 #define KI 						2.5f	//must not be zero
 #define MAX_SUM_ERROR 			(MOTOR_SPEED_LIMIT/KI)

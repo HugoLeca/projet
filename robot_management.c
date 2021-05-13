@@ -12,9 +12,8 @@
 #include <robot_management.h>
 #include <process_image.h>
 
-static uint8_t regulator_start = 0;
-static uint8_t corner = 0; 
-static uint8_t move_straight = 1; 
+static uint8_t state = 0;
+static bool start_reading_code = false; 
 
 
 // void good_rotation(void){ 
@@ -41,35 +40,6 @@ static uint8_t move_straight = 1;
 
 // }  
 
-// uint16_t most_frequent_tof(void) {
-
-//     uint16_t distance_tof = 0;
-//     uint32_t counter = 0;
-//     uint32_t max_counter = 0;
-//     uint16_t tab[TAB_SIZE];
-
-//     for (uint16_t i = 0; i < TAB_SIZE; ++i)
-//     {
-//         tab[i] = VL53L0X_get_dist_mm();
-//     }
-
-//     for (uint16_t i = 0; i < TAB_SIZE; ++i) {
-//         for(uint16_t j = 0; j < TAB_SIZE; ++j) {
-//             if((tab[i] - tab[j]) <= TOF_THRESHOLD || (tab[i] - tab[j]) >= -TOF_THRESHOLD) {
-//                 counter = counter + 1;
-//                 if (counter >= max_counter) {
-//                     max_counter = counter;
-//                     distance_tof = tab[i];
-//                 }
-//             }
-
-//         }
-          
-//     }
-
-//     return distance_tof;
-// }
-
 
 int16_t speed_correction(void) {
     
@@ -91,56 +61,79 @@ int16_t speed_correction(void) {
 
 void straight_line(void) {
 
-    static uint16_t counter_straight_line = 0;
+    uint16_t counter_straight_line = 0;
+    state = 0; 
 
-    if (VL53L0X_get_dist_mm() < 100) {   
-        if (counter_straight_line < 100) {
-            chprintf((BaseSequentialStream *)&SD3, "counter_straight_line = %d\n\r",counter_straight_line);
-            counter_straight_line = counter_straight_line + 1;
-            move_straight = 1;
-            regulator_start = 0;;
-            corner = 0;
-        } else {
-            counter_straight_line = 0;
-            move_straight = 0;
-            regulator_start = 1;
-            corner = 0;
-        }
+    if (VL53L0X_get_dist_mm() >= 80 && state == 0) {
+        left_motor_set_speed(MOTOR_SPEED - speed_correction()); 
+        right_motor_set_speed(MOTOR_SPEED + speed_correction()); 
+        //chprintf((BaseSequentialStream *)&SD3, "straight_line far distance = %d\n\r", VL53L0X_get_dist_mm());
+        state = 0; 
     } else {
-        move_straight = 1; 
-        regulator_start = 0;
-        corner = 0;
+        while (VL53L0X_get_dist_mm() >= 80 && counter_straight_line < 200 && state == 0){
+            counter_straight_line++;
+        }
+            
+        state = 1;
+        //chprintf((BaseSequentialStream *)&SD3, "from straight line to regulator\n\r");
     }
 }
 
 void speed_regulator(void) {
 
-    static uint16_t counter_stay_still = 0;
+    uint16_t counter_too_far = 0;
+    uint16_t counter_stay_still = 0;
     int16_t speed = 0;
     speed = pi_regulator(VL53L0X_get_dist_mm(), GOAL_DISTANCE);
 
-    if (VL53L0X_get_dist_mm() - GOAL_DISTANCE < ERROR_THRESHOLD) {
-        if (counter_stay_still < 1500) {
-            chprintf((BaseSequentialStream *)&SD3, "begin=%d end=%d code = %d\n\r", get_public_begin_move(), get_public_end_move(), get_bar_code());
-            left_motor_set_speed(-0.5*speed_correction_regulator());
-            right_motor_set_speed(0.5*speed_correction_regulator());  
-            counter_stay_still = counter_stay_still + 1; 
-            regulator_start = 1;
-            move_straight = 0;
-            corner = 0;            
-        } else {
-            counter_stay_still = 0;
-            regulator_start = 0;
-            corner = 1;
-            move_straight = 0;
-        }
-    } else {
-        left_motor_set_speed(speed*0.6 - speed_correction_regulator()); 
-        right_motor_set_speed(speed*0.6 + speed_correction_regulator());  
-        regulator_start = 1;
-        move_straight = 0;
-        corner = 0;
+    // while (VL53L0X_get_dist_mm() - GOAL_DISTANCE > ERROR_THRESHOLD && VL53L0X_get_dist_mm() < 80 && counter_too_far < 200 && state == 1) {
+    //     left_motor_set_speed(speed*0.6 - 0.5*speed_correction_regulator());
+    //     right_motor_set_speed(speed*0.6 + 0.5*speed_correction_regulator()); 
+    //     counter_too_far++; 
+    //     chprintf((BaseSequentialStream *)&SD3, "trop loin\n\r");
+    // }
+           
+    while ((VL53L0X_get_dist_mm() - GOAL_DISTANCE) <= ERROR_THRESHOLD && counter_stay_still <= 20 && state == 1) {
+        left_motor_set_speed(-0.5*speed_correction_regulator());
+        right_motor_set_speed(0.5*speed_correction_regulator());
+        counter_stay_still++;
+        //chprintf((BaseSequentialStream *)&SD3, "se positionne counter_stay_still=%d VL53L0X_get_dist_mm = %d\n\r", counter_stay_still, VL53L0X_get_dist_mm());
     }
+
+    if (VL53L0X_get_dist_mm() - GOAL_DISTANCE <= ERROR_THRESHOLD && counter_stay_still >= 20 && state == 1) {
+        start_reading_code = true; 
+        chprintf((BaseSequentialStream *)&SD3, "start_reading_code\n\r");
+    } else {
+        start_reading_code = false; 
+    }
+
+    if (get_code_detected() == false && start_reading_code == true && state == 1) {
+        chprintf((BaseSequentialStream *)&SD3, "code = %i\n\r", get_bar_code());
+    } 
+
+    if (get_code_detected() == true && state == 1) {
+        start_reading_code = false; 
+        chprintf((BaseSequentialStream *)&SD3, "good code\n\r");
+        state = 2; 
+        corner();
+    }
+    //chprintf((BaseSequentialStream *)&SD3, "from regulator to corner\n\r");         
+
+}
+
+void corner(void) {
+
+    uint16_t counter_corner = 0;  
+
+    while (counter_corner < 1500 && state == 2) {
+        //chprintf((BaseSequentialStream *)&SD3, "counter_corner = %d\n\r" ,counter_corner);
+        left_motor_set_speed(MOTOR_SPEED - speed_correction());
+        right_motor_set_speed(MOTOR_SPEED + speed_correction());
+        counter_corner++; 
+    } 
+
+    state = 0; 
+
 }
 
 int16_t speed_correction_regulator(void){
@@ -173,53 +166,21 @@ static THD_FUNCTION(RobotManagementThd, arg) {
 	chRegSetThreadName("RobotManagement Thd");
 	(void)arg;
 
-    
-    static uint16_t counter_corner = 0;   
-    int16_t speed = 0;
-  
+    state = 0; 
 
     /* Reader thread loop.*/
     while (1) {
 
-        // speed = pi_regulator(VL53L0X_get_dist_mm(), GOAL_DISTANCE);
-        // left_motor_set_speed(speed - speed_correction_regulator()); 
-        // right_motor_set_speed(speed + speed_correction_regulator());
+        straight_line(); 
 
-        // chprintf((BaseSequentialStream *)&SD3, "begin=%dend=%dspeed_correction=%d\n\r", 
-        //     get_public_begin_move(), get_public_end_move(), speed_correction_regulator());
-        // chThdSleepMilliseconds(500);
-
-        while (move_straight == 1 && regulator_start == 0 && corner == 0) {
-            straight_line(); 
-            left_motor_set_speed(MOTOR_SPEED - speed_correction()); 
-            right_motor_set_speed(MOTOR_SPEED + speed_correction());
-        } 
-
-        while (move_straight == 0 && regulator_start == 1 && corner == 0) { 
-            speed_regulator(); 
-        }
-
-
-        while (move_straight == 0 && regulator_start == 0 && corner == 1) {
-            if (counter_corner < 1500) {
-                chprintf((BaseSequentialStream *)&SD3, "counter_corner = %d\n\r",counter_corner);
-                left_motor_set_speed(MOTOR_SPEED - speed_correction());
-                right_motor_set_speed(MOTOR_SPEED + speed_correction());
-                counter_corner = counter_corner + 1; 
-                move_straight = 0;
-                regulator_start = 0;
-                corner = 1; 
-
-            } else {
-                counter_corner = 0;
-                move_straight = 1; 
-                regulator_start = 0;
-                corner = 0; 
-            }
-        }
+        speed_regulator(); 
         
     }
     	
+}
+
+bool get_start_reading_code(void) {
+    return start_reading_code; 
 }
 
 

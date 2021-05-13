@@ -9,6 +9,8 @@ int16_t speed_correction(void);
 //uint16_t most_frequent_tof(void);
 void speed_regulator(void);
 int16_t speed_correction_regulator(void);
+bool get_start_reading_code(void);
+void corner(void);
 
 
 #endif /* ROBOT_MANAGEMENT_H_ */

@@ -36,6 +36,9 @@ uint16_t get_public_end_move(void);
 //return the bar code
 uint16_t get_bar_code(void);
 
+//return if the code is detected 
+bool get_code_detected(void);
+
 //returns the adress of bar_code_ready_sem so that playProjectThd in code_to_music file
 /*//can access this ressource
 binary_semaphore_t* get_bar_code_sem(void);

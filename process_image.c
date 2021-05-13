@@ -8,6 +8,7 @@
 #include <camera/po8030.h>
 
 #include <process_image.h>
+#include <robot_management.h>
 #include <play_melody.h>
 
 
@@ -17,10 +18,11 @@
 
 static uint16_t public_end = 0;
 static uint16_t public_end_move = 0;
-static volatile uint8_t data[BAR_CODE_SIZE] = {0};
+static volatile uint16_t data[BAR_CODE_SIZE] = {0};
 static uint16_t public_begin = 0;
 static uint16_t public_begin_move = 0; 
 static uint16_t bar_code = 0;
+static bool code_detected = false;
 //semaphores
 static BSEMAPHORE_DECL(image_ready_sem, TRUE);
 //static BSEMAPHORE_DECL(bar_code_ready_sem, TRUE);
@@ -153,7 +155,7 @@ uint16_t extract_code_ter(uint8_t *buffer){
 	uint32_t average_barcode = 0;
 	uint8_t count_size_data = 0, count_size_bits = 0;
 	uint16_t new_begin = public_begin, old_begin = public_begin;
-	uint16_t i = 0;
+	uint16_t volatile i = 0;
 
 
 	width_pixels = public_end - public_begin + 1;
@@ -184,6 +186,9 @@ uint16_t extract_code_ter(uint8_t *buffer){
 			//find the section new section width
 			new_begin = i;
 
+			if(count_size_data == 4){
+				__asm__ volatile("nop");
+			}
 
 			//check step detection
 
@@ -304,7 +309,6 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 	uint8_t *img_buff_ptr; 
 	uint8_t image[IMAGE_BUFFER_SIZE] = {0};
-	bool code_detected = false;
 
 	
 
@@ -312,7 +316,7 @@ static THD_FUNCTION(ProcessImage, arg) {
 	systime_t new_time;
 
 
-    while(!code_detected){
+    while(1){
 
     	time = chVTGetSystemTime();
     	//waits until an image has been captured
@@ -348,7 +352,7 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 
 		//let's find the (public) end and begin variables
-		//extract_limits_move(image); 
+		extract_limits_move(image); 
 		
 
 		extract_limits_bis(image);
@@ -366,51 +370,71 @@ static THD_FUNCTION(ProcessImage, arg) {
 		uint16_t mask_bit15 = 0b1000000000000000;
 		uint16_t mask_bit0  = 0b0000000000000001;
 		bool code_stable = true;
+		
+
+		if(get_start_reading_code() == true) {
 
 
-		while(compteur < 50 && code_stable){
+
+			code_detected = false; 
+			bool fill_code = false; 
+
+			while(code_stable){
+
+				//time =  chVTGetSystemTime();
 			
-			code = extract_code_ter(image);
-			
-			if((code & mask_bit15) && (code & mask_bit0)){
-				if(code == temp_code){
-					compteur++;
-				} else {
-					temp_code = code;
-					compteur = 1;
-				}				
-			}
-			compteur_stability++;
+				code = extract_code_ter(image);
 
-			if(compteur_stability > 1000){
-				code_stable = false;
-				//chprintf((BaseSequentialStream *)&SD3, "CODE_NOT_STABLE");
-				break;
+				// chprintf((BaseSequentialStream *)&SD3, "capture␣time␣=␣%d\n", chVTGetSystemTime()-time);
+			
+				if((code & mask_bit15) && (code & mask_bit0)){
+					if(code == temp_code){
+						compteur++;
+						if(compteur == 50){
+							fill_code = true;
+							code_detected = true;
+							break;
+						}
+					} else {
+						temp_code = code;
+						compteur = 1;
+					}				
+				}
+				compteur_stability++;
+
+				if(compteur_stability > 1000){
+					code_stable = false;
+					//chprintf((BaseSequentialStream *)&SDU1, "CODE_NOT_STABLE");
+					break;
+				}
 			}
+
+			if(fill_code){
+			
+				//chMtxLock(&bar_code_lock);
+
+				bar_code = code;
+				//chprintf((BaseSequentialStream *)&SDU1, "barcode=%i\r\n",bar_code);
+
+				playNote(BIP_FREQU, BIP_DURATION);
+
+				
+				//code_detected = true;
+
+			}
+
+				//chMtxUnlock(&bar_code_lock);
+				//signal que un code barre a été trouvé
+				//chCondSignal(&bar_code_condvar);
+
+				//signals the bar_code has been captured
+				//chBSemSignal(&bar_code_ready_sem);
+
+				//new_time = chVTGetSystemTime();
+				//chprintf((BaseSequentialStream *)&SD3, "time_to_finish_thread=%ld\r\n",new_time - time);
 		}
 
-		if(code_stable){
-			
-			//chMtxLock(&bar_code_lock);
 
-			bar_code = code;
-			chprintf((BaseSequentialStream *)&SD3, "barcode=%i\r\n",bar_code);
-
-			playNote(BIP_FREQU, BIP_DURATION);
-
-			code_detected = true;
-
-			//chMtxUnlock(&bar_code_lock);
-			//signal que un code barre a été trouvé
-			//chCondSignal(&bar_code_condvar);
-
-			//signals the bar_code has been captured
-			//chBSemSignal(&bar_code_ready_sem);
-
-			//new_time = chVTGetSystemTime();
-			//chprintf((BaseSequentialStream *)&SD3, "time_to_finish_thread=%ld\r\n",new_time - time);
-
-		}
 	}
 }
 
@@ -433,6 +457,10 @@ uint16_t get_public_end(void){
 
 uint16_t get_bar_code(void){
 	return bar_code;
+}
+
+bool get_code_detected(void) {
+	return code_detected;
 }
 
 /*condition_variable_t* get_barcode_condvar(void){
