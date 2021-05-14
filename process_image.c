@@ -369,7 +369,7 @@ static THD_FUNCTION(ProcessImage, arg) {
 		uint16_t mask_bit0  = 0b0000000000000001;
 		bool code_stable = true;
 
-		//if(get_start_reading_code() == true) {
+		if(get_start_reading_code() == true) {
 
 			bool fill_code = false; 
 
@@ -382,8 +382,8 @@ static THD_FUNCTION(ProcessImage, arg) {
 						compteur++;
 						if(compteur == 50){
 							fill_code = true;
-							//code_detected = true;
-							//chprintf((BaseSequentialStream *)&SD3, "code_detected true 1\n\r");
+							code_detected = true;
+							chprintf((BaseSequentialStream *)&SD3, "code_detected true 1\n\r");
 							break;
 						}
 					} else {

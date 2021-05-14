@@ -72,8 +72,6 @@ void corner(void) {
 
 }
 
-
-
 int16_t speed_correction_regulator(void){
     int16_t speed_correction_regulator = 0;
     uint8_t good_position = 0;
@@ -205,5 +203,5 @@ bool get_start_reading_code(void) {
 
 
 void robot_management_start(void){
-	chThdCreateStatic(waRobotManagementThd, sizeof(waRobotManagementThd), NORMALPRIO, RobotManagementThd, NULL);
+	chThdCreateStatic(waRobotManagementThd, sizeof(waRobotManagementThd), NORMALPRIO + 10, RobotManagementThd, NULL);
 }
