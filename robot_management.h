@@ -13,4 +13,9 @@ bool get_start_reading_code(void);
 void corner(void);
 
 
+mutex_t* get_processImage_lock(void);
+
+condition_variable_t* get_processImage_condvar(void);
+
+
 #endif /* ROBOT_MANAGEMENT_H_ */

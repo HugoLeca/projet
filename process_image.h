@@ -36,6 +36,12 @@ uint16_t get_public_end_move(void);
 //return the bar code
 uint16_t get_bar_code(void);
 
+
+thread_reference_t* get_processImage_ref(void);
+mutex_t* get_processImage_lock(void);
+condition_variable_t* get_processImage_condvar(void);
+
+
 //returns the adress of bar_code_ready_sem so that playProjectThd in code_to_music file
 /*//can access this ressource
 binary_semaphore_t* get_bar_code_sem(void);

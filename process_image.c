@@ -10,6 +10,7 @@
 #include <process_image.h>
 #include <robot_management.h>
 #include <play_melody.h>
+#include <code_to_music.h>
 
 
 
@@ -29,6 +30,12 @@ static BSEMAPHORE_DECL(image_ready_sem, TRUE);
 /*static MUTEX_DECL(bar_code_lock);
 static CONDVAR_DECL(bar_code_condvar);
 */
+//conditional variables
+
+
+//reference
+static thread_reference_t process_image_ref = NULL;
+
 static bool process_image_done = false;
 static uint16_t final_code[MELODY_SIZE_MAX] = {0};
 static uint8_t code_indice_cnt;
@@ -317,8 +324,13 @@ static THD_FUNCTION(ProcessImage, arg) {
 	systime_t time;
 	systime_t new_time;
 
+	bool* process = NULL;
 
     while(1){
+
+    //wait for RobotManagement's signal
+    
+
 
     	time = chVTGetSystemTime();
     	//waits until an image has been captured
@@ -372,15 +384,25 @@ static THD_FUNCTION(ProcessImage, arg) {
 		uint16_t mask_bit15 = 0b1000000000000000;
 		uint16_t mask_bit0  = 0b0000000000000001;
 		bool code_stable = true;
+		bool fill_code = false;
 
+		chMtxLock(get_processImage_lock());
+			while(!get_start_reading_code()){
+				//wait for the robot to be in a good position
+				chCondWait(get_processImage_condvar());
+			}
 
-		while(compteur < 50 && code_stable){
+		while(code_stable){
 			
 			code = extract_code_ter(image);
 			
 			if((code & mask_bit15) && (code & mask_bit0)){
 				if(code == temp_code){
 					compteur++;
+					if(compteur == 50){
+						fill_code = true;
+						break;
+					}
 				} else {
 					temp_code = code;
 					compteur = 1;
@@ -395,7 +417,7 @@ static THD_FUNCTION(ProcessImage, arg) {
 			}
 		}
 
-		if(code_stable){
+		if(fill_code){
 			
 			//chMtxLock(&bar_code_lock);
 
@@ -404,12 +426,18 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 			playNote(BIP_FREQU, BIP_DURATION);
 
-			code_detected = true;
-
 			final_code[code_indice_cnt] = bar_code;
 			code_indice_cnt++;
 
-			chThdSleepMilliseconds(4000);
+			code_detected = true;
+
+			
+
+
+
+
+
+			//chThdSleepMilliseconds(4000);
 
 
 
@@ -467,7 +495,9 @@ static THD_FUNCTION(ProcessImage, arg) {
 			}
 
 
-			chThdYield();
+
+			//tells the threads waiting that the image has been processed correctly
+			
 
 
 			//chMtxUnlock(&bar_code_lock);
@@ -482,6 +512,8 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 		}
 	}
+	
+	chMtxUnlock(get_processImage_lock());
 }
 
 
@@ -508,6 +540,11 @@ uint16_t get_bar_code(void){
 bool get_code_detected(void) {
 	return code_detected;
 }
+
+thread_reference_t* get_processImage_ref(void){
+	return &process_image_ref;
+}
+
 
 /*condition_variable_t* get_barcode_condvar(void){
 	return &bar_code_condvar;

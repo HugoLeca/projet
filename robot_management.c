@@ -15,6 +15,9 @@
 static uint8_t state = 0;
 static bool start_reading_code = false; 
 
+//contitional variables
+static MUTEX_DECL(process_image_lock);
+static CONDVAR_DECL(process_image_condvar);
 
 // void good_rotation(void){ 
 
@@ -84,6 +87,8 @@ void speed_regulator(void) {
     uint16_t counter_too_far = 0;
     uint16_t counter_stay_still = 0;
     int16_t speed = 0;
+
+    
     speed = pi_regulator(VL53L0X_get_dist_mm(), GOAL_DISTANCE);
 
     // while (VL53L0X_get_dist_mm() - GOAL_DISTANCE > ERROR_THRESHOLD && VL53L0X_get_dist_mm() < 80 && counter_too_far < 200 && state == 1) {
@@ -93,30 +98,46 @@ void speed_regulator(void) {
     //     chprintf((BaseSequentialStream *)&SD3, "trop loin\n\r");
     // }
            
-    while ((VL53L0X_get_dist_mm() - GOAL_DISTANCE) <= ERROR_THRESHOLD && counter_stay_still <= 20 && state == 1) {
+    while ((VL53L0X_get_dist_mm() - GOAL_DISTANCE) <= ERROR_THRESHOLD && counter_stay_still <= 100 && state == 1) {
         left_motor_set_speed(-0.5*speed_correction_regulator());
         right_motor_set_speed(0.5*speed_correction_regulator());
         counter_stay_still++;
         //chprintf((BaseSequentialStream *)&SD3, "se positionne counter_stay_still=%d VL53L0X_get_dist_mm = %d\n\r", counter_stay_still, VL53L0X_get_dist_mm());
     }
 
-    if (VL53L0X_get_dist_mm() - GOAL_DISTANCE <= ERROR_THRESHOLD && counter_stay_still >= 20 && state == 1) {
+
+    start_reading_code = true;
+
+
+    //wake le thread ProcessImage
+    chCondBroadcast(&process_image_condvar);
+
+
+
+
+    
+
+    
+    start_reading_code = false; 
+    corner();
+
+/*    if (VL53L0X_get_dist_mm() - GOAL_DISTANCE <= ERROR_THRESHOLD  && state == 1) {
         start_reading_code = true; 
         chprintf((BaseSequentialStream *)&SD3, "start_reading_code\n\r");
     } else {
         start_reading_code = false; 
-    }
-
+    }*/
+    /*
     if (get_code_detected() == false && start_reading_code == true && state == 1) {
         chprintf((BaseSequentialStream *)&SD3, "code = %i\n\r", get_bar_code());
     } 
-
-    if (get_code_detected() == true && state == 1) {
+*/
+    /*if (get_code_detected() == true && state == 1) {
         start_reading_code = false; 
         chprintf((BaseSequentialStream *)&SD3, "good code\n\r");
         state = 2; 
         corner();
-    }
+    }*/
     //chprintf((BaseSequentialStream *)&SD3, "from regulator to corner\n\r");         
 
 }
@@ -158,6 +179,16 @@ int16_t speed_correction_regulator(void){
     }
 
 }
+
+
+mutex_t* get_processImage_lock(void){
+    return &process_image_lock;
+}
+
+condition_variable_t* get_processImage_condvar(void){
+    return &process_image_condvar;
+}
+
 
 
 static THD_WORKING_AREA(waRobotManagementThd, 1024);
