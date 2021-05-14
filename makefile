@@ -3,16 +3,15 @@
 #Simply adapt the lines below to be able to compile
 
 # Define project name here
-PROJECT = projet_epuck
+PROJECT = projet_e-puck
 
 #Define path to the e-puck2_main-processor folder
-GLOBAL_PATH = ../../../lib/e-puck2_main-processor
+GLOBAL_PATH = ../lib/e-puck2_main-processor
 
 #Source files to include
 CSRC += ./main.c          \
 		./pi_regulator.c  \
 		./process_image.c \
-		./process_distance.c \
 		./test_audio.c    \
 		./code_to_music.c \
 		./robot_management.c  \
