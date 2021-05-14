@@ -30,8 +30,6 @@ static BSEMAPHORE_DECL(image_ready_sem, TRUE);
 static CONDVAR_DECL(bar_code_condvar);
 */
 
-
-
 /*
  *  Returns the line's width extracted from the image buffer given
  *  Returns 0 if line not found
@@ -301,7 +299,7 @@ static THD_FUNCTION(CaptureImage, arg) {
 }
 
 
-static THD_WORKING_AREA(waProcessImage, 3000);
+static THD_WORKING_AREA(waProcessImage, 1028);
 static THD_FUNCTION(ProcessImage, arg) {
 
     chRegSetThreadName(__FUNCTION__);
@@ -317,6 +315,12 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 
     while(1){
+
+    	extract_limits_move(image);
+
+    	if(get_start_reading_code() == true) {
+
+    	chprintf((BaseSequentialStream *)&SD3, "enter the loop process_image\n\r");
 
     	time = chVTGetSystemTime();
     	//waits until an image has been captured
@@ -334,11 +338,11 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 
 		//Extracts only the red pixels
-		for(uint16_t i = 0 ; i < (2 * IMAGE_BUFFER_SIZE) ; i+=2){
-		//extracts first 5bits of the first byte
+		for(uint16_t i = 0 ; i < (2 * IMAGE_BUFFER_SIZE) ; i+=2) {
+			//extracts first 5bits of the first byte
 
-		//takes nothing from the second byte
-		image[i/2] = (uint8_t)img_buff_ptr[i]&0xF8;
+			//takes nothing from the second byte
+			image[i/2] = (uint8_t)img_buff_ptr[i]&0xF8;
 		}
 		/*
 		if(send_to_computer){
@@ -349,18 +353,12 @@ static THD_FUNCTION(ProcessImage, arg) {
 		send_to_computer = !send_to_computer;
 		*/
 
-
-
 		//let's find the (public) end and begin variables
-		extract_limits_move(image); 
+ 
 		
-
 		extract_limits_bis(image);
 		//chprintf((BaseSequentialStream *)&SD3, "begin=%i pixels",public_begin);
 		//chprintf((BaseSequentialStream *)&SD3, "end=%ipixels\r\n",public_end);
-
-
-
 
 		//code is send only if the hash is respected and if the code is recognized
 		// with sufficient repetability. i.e bit0(code) = 1, bit15(code) = 1, and compteur = 10.
@@ -370,29 +368,22 @@ static THD_FUNCTION(ProcessImage, arg) {
 		uint16_t mask_bit15 = 0b1000000000000000;
 		uint16_t mask_bit0  = 0b0000000000000001;
 		bool code_stable = true;
-		
 
-		if(get_start_reading_code() == true) {
+		//if(get_start_reading_code() == true) {
 
-
-
-			code_detected = false; 
 			bool fill_code = false; 
 
 			while(code_stable){
-
-				//time =  chVTGetSystemTime();
 			
 				code = extract_code_ter(image);
-
-				// chprintf((BaseSequentialStream *)&SD3, "capture␣time␣=␣%d\n", chVTGetSystemTime()-time);
 			
 				if((code & mask_bit15) && (code & mask_bit0)){
 					if(code == temp_code){
 						compteur++;
 						if(compteur == 50){
 							fill_code = true;
-							code_detected = true;
+							//code_detected = true;
+							//chprintf((BaseSequentialStream *)&SD3, "code_detected true 1\n\r");
 							break;
 						}
 					} else {
@@ -404,6 +395,7 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 				if(compteur_stability > 1000){
 					code_stable = false;
+					code_detected = false; 
 					//chprintf((BaseSequentialStream *)&SDU1, "CODE_NOT_STABLE");
 					break;
 				}
@@ -412,14 +404,15 @@ static THD_FUNCTION(ProcessImage, arg) {
 			if(fill_code){
 			
 				//chMtxLock(&bar_code_lock);
-
 				bar_code = code;
 				//chprintf((BaseSequentialStream *)&SDU1, "barcode=%i\r\n",bar_code);
 
 				playNote(BIP_FREQU, BIP_DURATION);
-
 				
-				//code_detected = true;
+				code_detected = true;
+				chThdSleepUntilWindowed(time, time + MS2ST(3000));
+
+				//chprintf((BaseSequentialStream *)&SD3, "code_detected true\n\r");
 
 			}
 
@@ -432,6 +425,10 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 				//new_time = chVTGetSystemTime();
 				//chprintf((BaseSequentialStream *)&SD3, "time_to_finish_thread=%ld\r\n",new_time - time);
+		//}
+		} else {
+			code_detected = false; 
+			chThdSleepMilliseconds(100); 
 		}
 
 
@@ -462,15 +459,6 @@ uint16_t get_bar_code(void){
 bool get_code_detected(void) {
 	return code_detected;
 }
-
-/*condition_variable_t* get_barcode_condvar(void){
-	return &bar_code_condvar;
-}
-
-mutex_t* get_barcode_mtx(void){
-	return &bar_code_lock;
-}
-*/
 
 void process_image_start(void){
 	chThdCreateStatic(waProcessImage, sizeof(waProcessImage), NORMALPRIO, ProcessImage, NULL);

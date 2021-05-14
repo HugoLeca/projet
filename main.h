@@ -34,6 +34,7 @@ extern "C" {
 #define WALL_THRESHOLD			1200.0f
 #define TAB_SIZE				100
 #define	TOF_THRESHOLD			50
+#define PAUSE					0
 
 /** Robot wide IPC bus. */
 extern messagebus_t bus;

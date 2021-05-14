@@ -3,6 +3,8 @@
 #include <string.h>
 #include <math.h>
 
+#include <audio_thread.h>
+#include <play_melody.h>
 #include "ch.h"
 #include "hal.h"
 #include "memory_protection.h"
@@ -45,7 +47,6 @@ static void serial_start(void)
 
 	sdStart(&SD3, &ser_cfg); // UART3.
 }
-
 
 int main(void)
 {
@@ -91,7 +92,6 @@ int main(void)
 
     	//waits 1 second
         chThdSleepMilliseconds(1000);
-
     }
 }
 
