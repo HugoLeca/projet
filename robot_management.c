@@ -1,3 +1,9 @@
+/*
+    NAME : code_to_music.c
+    AUTHOR : MARGUERITE FAUROUX and HUGO LECA 
+    LAST MODIFICATION : 16/05/2021
+*/
+
 #include "ch.h"
 #include "hal.h"
 #include <chprintf.h>
@@ -89,9 +95,9 @@ void rotation_speed_bar_code(void){
 }
 
 
-void extract_bar_code(void) {
+void process_bar_code(void) {
 
-    //code is send only if the hash is respected and if the code is recognized
+    // code is send only if the hash is respected and if the code is recognized
     // with sufficient repetability. i.e bit0(code) = 1, bit15(code) = 1, and compteur = 10.
     uint8_t counter = 0;
     uint16_t temp_code = 0;
@@ -162,7 +168,6 @@ void extract_bar_code(void) {
             }
 
             //enters an infinite loop : SINGING
-
             while(1){
                 for(uint8_t ThisNote = 0 ; ThisNote < notes_null_rank ; ThisNote++){
 
@@ -258,7 +263,7 @@ static THD_FUNCTION(RobotManagementThd, arg) {
                 
                 case 3:
                     // extract the bar code
-                    extract_bar_code();
+                    process_bar_code();
                     if (code_detected == true) {
                         code_detected = false; 
                         start_reading_code = false; 
@@ -276,10 +281,6 @@ static THD_FUNCTION(RobotManagementThd, arg) {
         }
 
     }
-}
-
-bool get_start_reading_code(void) {
-    return start_reading_code; 
 }
 
 void robot_management_start(void){

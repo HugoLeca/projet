@@ -1,6 +1,6 @@
 /*
 	NAME : process_image.h
-	AUTHOR : HUGO LECA
+	AUTHOR : HUGO LECA and MARGUERITE FAUROUX
 	LAST MODIFICATION : 16/05/2021
 */
 
@@ -34,13 +34,6 @@ uint16_t extract_code(uint8_t *buffer);
 
 /*return the number of bits in the section of size width*/
 uint8_t get_size_bits(uint16_t width);
-
-
-/*returns public_begin, i.e the first pixel of the code*/
-uint16_t get_public_begin(void);
-
-/*returns public_end, i.e le last pixel of the code*/
-uint16_t get_public_end(void);
 
 /*returns public_begin, i.e the first pixel of the code*/
 uint16_t get_public_begin_move(void);

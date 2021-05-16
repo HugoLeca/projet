@@ -1,6 +1,6 @@
 /*
 	NAME : process_image.c
-	AUTHOR : HUGO LECA
+	AUTHOR : HUGO LECA and MARGUERITE FAUROUX
 	LAST MODIFICATION : 16/05/2021
 */
 
@@ -16,10 +16,6 @@
 #include <process_image.h>
 #include <robot_management.h>
 #include <play_melody.h>
-
-
-
-
 
 
 static uint16_t public_end = 0;
@@ -82,10 +78,8 @@ void extract_limits(uint8_t *buffer){
 		}
 	}
 
-	if(1){
-		public_end = end;
-		public_begin = begin;
-	}
+	public_end = end;
+	public_begin = begin;
 }
 
 void extract_limits_move(uint8_t *buffer){
@@ -177,7 +171,7 @@ uint16_t extract_code(uint8_t *buffer){
 	}
 
 //////////////////////////////////////////////////////////////////////////
-	//à voir si utile pour le code
+	// //à voir si utile pour le code
 	uint8_t null_rank = 0;
 
 	for(uint8_t i = 0; i < BAR_CODE_SIZE ; i++){
@@ -187,20 +181,17 @@ uint16_t extract_code(uint8_t *buffer){
 		}
 	}
 
-	//extract the limits of the barcode in pixels
-	public_begin = data[0];
-	public_end = data[null_rank - 1];
+	// //extract the limits of the barcode in pixels
+	// public_begin = data[0];
+	// public_end = data[null_rank - 1];
 
 //////////////////////////////////////////////////////////////////////////
 
-
-
-
 	//barcode filling algorithm
 	bool bit_value = true; 
-	uint8_t volatile nbre_bits = 0;
-	uint16_t volatile mask = 0;
-	uint16_t volatile code = 0;
+	uint8_t nbre_bits = 0;
+	uint16_t mask = 0;
+	uint16_t code = 0;
 	uint8_t code_indice = 0;
 	uint8_t addition = 0;
 
@@ -327,14 +318,6 @@ uint16_t get_public_begin_move(void){
 
 uint16_t get_public_end_move(void){
 	return public_end_move;
-}
-
-uint16_t get_public_begin(void){
-	return public_begin;
-}
-
-uint16_t get_public_end(void){
-	return public_end;
 }
 
 uint16_t get_code(void){
