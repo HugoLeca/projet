@@ -21,8 +21,7 @@ static uint16_t public_end_move = 0;
 static volatile uint16_t data[BAR_CODE_SIZE] = {0};
 static uint16_t public_begin = 0;
 static uint16_t public_begin_move = 0; 
-static uint16_t bar_code = 0;
-static bool code_detected = false;
+static uint16_t code = 0; 
 //semaphores
 static BSEMAPHORE_DECL(image_ready_sem, TRUE);
 //static BSEMAPHORE_DECL(bar_code_ready_sem, TRUE);
@@ -41,8 +40,6 @@ void extract_limits_bis(uint8_t *buffer){
 	uint16_t   diff = 0, begin = 0, end = 0;
 	uint8_t stop = 0;
 	uint32_t   average_diff=0;
-
-
 
 	average_diff = 10;
 
@@ -147,8 +144,8 @@ void extract_limits_move(uint8_t *buffer){
 
 }
 
-
 uint16_t extract_code_ter(uint8_t *buffer){
+
 	uint16_t width_pixels = 0;
 	uint32_t average_barcode = 0;
 	uint8_t count_size_data = 0, count_size_bits = 0;
@@ -169,8 +166,6 @@ uint16_t extract_code_ter(uint8_t *buffer){
 	//data and data_volatile contain every step (positive or negative) on the image
 	while(i<(IMAGE_BUFFER_SIZE - WIDTH_SLOPE)){
 
-
-
 		if( abs(buffer[i]) > abs(buffer[i+WIDTH_SLOPE]) ){
 			diff = buffer[i] - buffer[i+WIDTH_SLOPE];
 		} else {
@@ -184,12 +179,7 @@ uint16_t extract_code_ter(uint8_t *buffer){
 			//find the section new section width
 			new_begin = i;
 
-			if(count_size_data == 4){
-				__asm__ volatile("nop");
-			}
-
 			//check step detection
-
 			data[count_size_data] = i;
 			count_size_data++;
 
@@ -308,130 +298,47 @@ static THD_FUNCTION(ProcessImage, arg) {
 	uint8_t *img_buff_ptr; 
 	uint8_t image[IMAGE_BUFFER_SIZE] = {0};
 
-	
-
 	systime_t time;
 	systime_t new_time;
 
 
     while(1){
 
-    	extract_limits_move(image);
+    	for(uint8_t i = 0; i<10 ; i++){
+	    	time = chVTGetSystemTime();
+	    	//waits until an image has been captured
+	        chBSemWait(&image_ready_sem);
+			//gets the pointer to the array filled with the last image in RGB565    
+			img_buff_ptr = dcmi_get_last_image_ptr();
 
-    	if(get_start_reading_code() == true) {
+			//sends the data buffer of the given size to the computer
+			//SendUint8ToComputer(uint8_t* data, uint16_t size);
 
-    	chprintf((BaseSequentialStream *)&SD3, "enter the loop process_image\n\r");
-
-    	time = chVTGetSystemTime();
-    	//waits until an image has been captured
-        chBSemWait(&image_ready_sem);
-		//gets the pointer to the array filled with the last image in RGB565    
-		img_buff_ptr = dcmi_get_last_image_ptr();
-
-		//sends the data buffer of the given size to the computer
-		//SendUint8ToComputer(uint8_t* data, uint16_t size);
-
-		bool send_to_computer = true;
-
-		uint16_t volatile code = 0;
+			bool send_to_computer = true;
 
 
+			//Extracts only the red pixels
+			for(uint16_t i = 0 ; i < (2 * IMAGE_BUFFER_SIZE) ; i+=2) {
+				//extracts first 5bits of the first byte
 
-		//Extracts only the red pixels
-		for(uint16_t i = 0 ; i < (2 * IMAGE_BUFFER_SIZE) ; i+=2) {
-			//extracts first 5bits of the first byte
-
-			//takes nothing from the second byte
-			image[i/2] = (uint8_t)img_buff_ptr[i]&0xF8;
-		}
-		/*
-		if(send_to_computer){
-			//sends to the computer the image
-			SendUint8ToComputer(image, IMAGE_BUFFER_SIZE);
-		}
-		//invert the bool
-		send_to_computer = !send_to_computer;
-		*/
-
-		//let's find the (public) end and begin variables
- 
-		
-		extract_limits_bis(image);
-		//chprintf((BaseSequentialStream *)&SD3, "begin=%i pixels",public_begin);
-		//chprintf((BaseSequentialStream *)&SD3, "end=%ipixels\r\n",public_end);
-
-		//code is send only if the hash is respected and if the code is recognized
-		// with sufficient repetability. i.e bit0(code) = 1, bit15(code) = 1, and compteur = 10.
-		uint8_t compteur = 0;
-		uint16_t compteur_stability = 0;
-		uint16_t temp_code = 0;
-		uint16_t mask_bit15 = 0b1000000000000000;
-		uint16_t mask_bit0  = 0b0000000000000001;
-		bool code_stable = true;
-
-		if(get_start_reading_code() == true) {
-
-			bool fill_code = false; 
-
-			while(code_stable){
-			
-				code = extract_code_ter(image);
-			
-				if((code & mask_bit15) && (code & mask_bit0)){
-					if(code == temp_code){
-						compteur++;
-						if(compteur == 50){
-							fill_code = true;
-							code_detected = true;
-							chprintf((BaseSequentialStream *)&SD3, "code_detected true 1\n\r");
-							break;
-						}
-					} else {
-						temp_code = code;
-						compteur = 1;
-					}				
-				}
-				compteur_stability++;
-
-				if(compteur_stability > 1000){
-					code_stable = false;
-					code_detected = false; 
-					//chprintf((BaseSequentialStream *)&SDU1, "CODE_NOT_STABLE");
-					break;
-				}
+				//takes nothing from the second byte
+				image[i/2] = (uint8_t)img_buff_ptr[i]&0xF8;
 			}
-
-			if(fill_code){
-			
-				//chMtxLock(&bar_code_lock);
-				bar_code = code;
-				//chprintf((BaseSequentialStream *)&SDU1, "barcode=%i\r\n",bar_code);
-
-				playNote(BIP_FREQU, BIP_DURATION);
-				
-				code_detected = true;
-				chThdSleepUntilWindowed(time, time + MS2ST(3000));
-
-				//chprintf((BaseSequentialStream *)&SD3, "code_detected true\n\r");
-
+			/*
+			if(send_to_computer){
+				//sends to the computer the image
+				SendUint8ToComputer(image, IMAGE_BUFFER_SIZE);
 			}
+			//invert the bool
+			send_to_computer = !send_to_computer;
+			*/
 
-				//chMtxUnlock(&bar_code_lock);
-				//signal que un code barre a été trouvé
-				//chCondSignal(&bar_code_condvar);
+			//let's find the (public) end and begin variables	
+			extract_limits_bis(image);
+			extract_limits_move(image);
 
-				//signals the bar_code has been captured
-				//chBSemSignal(&bar_code_ready_sem);
-
-				//new_time = chVTGetSystemTime();
-				//chprintf((BaseSequentialStream *)&SD3, "time_to_finish_thread=%ld\r\n",new_time - time);
-		//}
-		} else {
-			code_detected = false; 
-			chThdSleepMilliseconds(100); 
+			code = extract_code_ter(image); 
 		}
-
-
 	}
 }
 
@@ -452,13 +359,13 @@ uint16_t get_public_end(void){
 	return public_end;
 }
 
-uint16_t get_bar_code(void){
-	return bar_code;
+uint16_t get_code(void){
+	return code;
 }
 
-bool get_code_detected(void) {
-	return code_detected;
-}
+// bool get_code_detected(void) {
+// 	return code_detected;
+// }
 
 void process_image_start(void){
 	chThdCreateStatic(waProcessImage, sizeof(waProcessImage), NORMALPRIO, ProcessImage, NULL);

@@ -16,7 +16,7 @@ void extract_limits_move(uint8_t *buffer);
 //analyse l'image et en extrait un code binaire
 //uint16_t extract_code(uint8_t *buffer);
 
-//encore une autre méthode... renvoie le nombre de bits captés par la caméra.
+//encore une autre mï¿½thode... renvoie le nombre de bits captï¿½s par la camï¿½ra.
 uint16_t extract_code_ter(uint8_t *buffer);
 
 //revoie le nombre de bits dans la section de taille width
@@ -33,11 +33,11 @@ uint16_t get_public_begin_move(void);
 
 uint16_t get_public_end_move(void);
 
-//return the bar code
-uint16_t get_bar_code(void);
+//return the code
+uint16_t get_code(void);
 
 //return if the code is detected 
-bool get_code_detected(void);
+//bool get_code_detected(void);
 
 //returns the adress of bar_code_ready_sem so that playProjectThd in code_to_music file
 /*//can access this ressource
@@ -51,7 +51,7 @@ binary_semaphore_t* get_bar_code_sem(void);
 condition_variable_t* get_barcode_condvar(void);
 */
 
-//retourne vraie si la moyenne de la section est inferrieur a  la moyenne de tout
+//retourne vraie si la moyenne de la section est inferrieur aï¿½ la moyenne de tout
 //le code barre, retourne faux sinon
 int get_section_value(uint16_t average_barcode, uint16_t average_section);
 

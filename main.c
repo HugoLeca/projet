@@ -19,22 +19,14 @@
 #include <msgbus/messagebus.h>
 #include <chprintf.h>
 
-#include <pi_regulator.h>
+#include <p_regulator.h>
 #include <process_image.h>
 #include <robot_management.h>
-#include <test_audio.h>
 #include <code_to_music.h>
 
 messagebus_t bus;
 MUTEX_DECL(bus_lock);
 CONDVAR_DECL(bus_condvar);
-
-void SendUint8ToComputer(uint8_t* data, uint16_t size) 
-{
-	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)"START", 5);
-	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)&size, sizeof(uint16_t));
-	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)data, size);
-}
 
 static void serial_start(void)
 {
@@ -50,45 +42,39 @@ static void serial_start(void)
 
 int main(void)
 {
-
     halInit();
     chSysInit();
     mpu_init();
     messagebus_init(&bus, &bus_lock, &bus_condvar);
 
+
     //starts the serial communication
     serial_start();
-    //starts the USB communication
-    usb_start();
+
+    //starts the threads for the proximity sensors 
+	proximity_start();
+	calibrate_ir();
+
     //starts the camera
     dcmi_start();
 	po8030_start();
-	//inits the motors
-	motors_init();
-	//starts the audio
-	dac_start();
-	//starts the threads for the proximity sensors 
-	proximity_start();
-	calibrate_ir();
 
 	//starts the thread for the ToF sensor
 	VL53L0X_start();
 
-	//starts the thread for the pi regulator
-	//pi_regulator_start();
+	//inits the motors
+	motors_init();
+
+	//starts the audio
+	dac_start();
+
 	//starts the thread for the robot
 	robot_management_start();
 
 	process_image_start();
 
-	
-	//starts the thread for playing melodies, internals or externals
-    //playMelodyStart();
-    //test_audio_external();
-
     /* Infinite loop. */
     while (1) {
-
 
     	//waits 1 second
         chThdSleepMilliseconds(1000);

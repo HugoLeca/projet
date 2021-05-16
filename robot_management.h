@@ -3,13 +3,12 @@
 
 
 void robot_management_start(void);
-void good_rotation(void);
-void straight_line(void);
-int16_t speed_correction(void);
+int16_t speed_correction_function(void);
 //uint16_t most_frequent_tof(void);
-int16_t speed_correction_regulator(void);
-bool get_start_reading_code(void);
-void corner(void); 
+int16_t rotation_speed_bar_code(void);
+bool get_start_reading_code(void); 
+void extract_bar_code(void);
+void rotate(int speed_r, int speed_l);
 
 
 

@@ -139,7 +139,6 @@ uint16_t code_to_frequency(uint16_t note){
 			break;
 
 		case 31:
-			//frequency = PAUSE;
 			frequency = PAUSE;
 			break;
 	}
@@ -176,22 +175,7 @@ uint16_t code_to_durations(uint16_t code){
 
 }
 
-
-
-/*
-static uint16_t code[] = {
-	
-	0b1000000000010001, 0b1001000000101001, 0b1001110001001001, 0b1010110001100001,
-
-};*/
-
-static uint16_t code[MELODY_SIZE_MAX] = {0};
-
-/*static uint16_t code[] = {0};*/
-
-
-
-void get_durations_from_code(uint16_t* buffer_durations, uint16_t* buffer_code){
+void get_durations_from_code(uint16_t* buffer_durations, uint16_t* buffer_code, uint8_t null_rank){
 	uint16_t mask_durations_1 = 0;
 	uint16_t mask_durations_2 = 0;
 
@@ -209,15 +193,12 @@ void get_durations_from_code(uint16_t* buffer_durations, uint16_t* buffer_code){
 
 	while(stop == 0){
 
-		if(indice_code == (sizeof(code)/2)){
+		if(indice_code == (null_rank - 1)){
 			stop = 1;
 		} else {
 			temp_durations_1 = (mask_durations_1 & buffer_code[indice_code]) >> 8;
 			temp_durations_2 = (mask_durations_2 & buffer_code[indice_code]) >> 1;
 
-			if(indice_durations == 6){
-				stop = 0;
-			}
 			buffer_durations[indice_durations] = code_to_durations(temp_durations_1);
 			indice_durations++;
 			buffer_durations[indice_durations] = code_to_durations(temp_durations_2);
@@ -228,8 +209,7 @@ void get_durations_from_code(uint16_t* buffer_durations, uint16_t* buffer_code){
 	}
 }
 
-
-void get_melody_from_code(uint16_t* buffer_melody, uint16_t* buffer_code){
+void get_melody_from_code(uint16_t* buffer_melody, uint16_t* buffer_code, uint8_t null_rank){
 
 	uint16_t mask_note_1 = 0;
 	uint16_t mask_note_2 = 0;
@@ -239,9 +219,6 @@ void get_melody_from_code(uint16_t* buffer_melody, uint16_t* buffer_code){
 	mask_note_2 = 0b0000000011111000; //extract second note 
  	//extract second durations
 
-
-
-
 	uint16_t temp_note_1 = 0, temp_note_2 = 0;
 
 	uint8_t indice_notes = 0;
@@ -250,7 +227,7 @@ void get_melody_from_code(uint16_t* buffer_melody, uint16_t* buffer_code){
 
 	while(stop == 0){
 
-		if(indice_code == (sizeof(code)/2)){
+		if(indice_code == (null_rank - 1)){
 			stop = 1;
 		} else {
 			temp_note_1 = (mask_note_1 & buffer_code[indice_code]) >> 10;
@@ -266,22 +243,6 @@ void get_melody_from_code(uint16_t* buffer_melody, uint16_t* buffer_code){
 		indice_code++;
 	}
 }
-
-/*
-void wait_code_bar_ready(void) {
-
-	condition_variable_t* bar_code_condvar = get_barcode_condvar();
-	mutex_t* bar_code_lock = get_barcode_mtx();
-
-	//waits until a barcode has been captured
-    chMtxLock(&bar_code_lock);
-    chCondWait(&bar_code_condvar);
-    chMtxUnlock(&bar_code_lock);
-
-
-}
-*/
-//static THD_WORKING_AREA(waPlayProjectThd, 256);
 
 
 
