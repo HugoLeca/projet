@@ -1,4 +1,11 @@
 import numpy
+"""
+	NAME : code_to_music.c
+	AUTHOR : HUGO LECA
+	LAST MODIFICATION : 16/05/2021
+
+"""
+
 from PIL import Image
 
 data = numpy.zeros((1024, 1024, 3), dtype=numpy.uint8)
@@ -9,7 +16,7 @@ tab_music = numpy.array( [1,     0, 1 , 0, 0, 0     , 0, 0,     0, 0, 0, 0, 0,  
 #tab_music = numpy.array([1,     0, 0 , 0, 0, 0     , 0, 0,     0, 0, 0, 0, 0,        0, 0, 1])
 
 
-#constantes globales
+#constante globales
 BIT_WIDTH = 12
 
 #algo remplissage

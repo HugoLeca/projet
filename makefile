@@ -1,6 +1,8 @@
+#	NAME : code_to_music.c
+#	AUTHOR : HUGO LECA and MARGUERITE FAUROUX
+#	LAST MODIFICATION : 16/05/2021
+#   modified from original template
 
-#This is a template to build your own project with the e-puck2_main-processor folder as a library.
-#Simply adapt the lines below to be able to compile
 
 # Define project name here
 PROJECT = projet_e-puck

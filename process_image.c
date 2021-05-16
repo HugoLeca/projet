@@ -1,3 +1,9 @@
+/*
+	NAME : process_image.c
+	AUTHOR : HUGO LECA
+	LAST MODIFICATION : 16/05/2021
+*/
+
 #include "ch.h"
 #include "hal.h"
 #include <chprintf.h>
@@ -22,18 +28,16 @@ static volatile uint16_t data[BAR_CODE_SIZE] = {0};
 static uint16_t public_begin = 0;
 static uint16_t public_begin_move = 0; 
 static uint16_t code = 0; 
+
 //semaphores
 static BSEMAPHORE_DECL(image_ready_sem, TRUE);
-//static BSEMAPHORE_DECL(bar_code_ready_sem, TRUE);
-/*static MUTEX_DECL(bar_code_lock);
-static CONDVAR_DECL(bar_code_condvar);
-*/
+
 
 /*
  *  Returns the line's width extracted from the image buffer given
  *  Returns 0 if line not found
  */
-void extract_limits_bis(uint8_t *buffer){
+void extract_limits(uint8_t *buffer){
 	
 	uint16_t   i = 0;
 	uint16_t   j = IMAGE_BUFFER_SIZE - WIDTH_SLOPE;
@@ -135,7 +139,7 @@ void extract_limits_move(uint8_t *buffer){
 
 }
 
-uint16_t extract_code_ter(uint8_t *buffer){
+uint16_t extract_code(uint8_t *buffer){
 
 	uint8_t count_size_data = 0;
 	uint16_t new_begin = public_begin;
@@ -192,7 +196,7 @@ uint16_t extract_code_ter(uint8_t *buffer){
 
 
 
-	//code filling algorithm
+	//barcode filling algorithm
 	bool bit_value = true; 
 	uint8_t volatile nbre_bits = 0;
 	uint16_t volatile mask = 0;
@@ -305,13 +309,13 @@ static THD_FUNCTION(ProcessImage, arg) {
 			//let's find the (public) end and begin variables	
 
 			//extracts the limits for decoding the barcode
-			extract_limits_bis(image);
+			extract_limits(image);
 
 			//extract the limits for robot placement in front of the barcode
 			extract_limits_move(image);
 
 			//return the 16bits binary barcode
-			code = extract_code_ter(image); 
+			code = extract_code(image); 
 		}
 	}
 }

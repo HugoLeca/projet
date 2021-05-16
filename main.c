@@ -1,3 +1,8 @@
+/*
+	NAME : main.c
+	AUTHOR : HUGO LECA and MARGUERITE FAUROUX
+	LAST MODIFICATION : 16/05/2021
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
