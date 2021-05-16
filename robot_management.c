@@ -16,7 +16,8 @@
 
 //static variables that are needed in the file 
 static int16_t speed_correction = 0; 
-static int16_t rotation_speed = 0;
+static int16_t rotation_speed_left = 0;
+static int16_t rotation_speed_right = 0; 
 static uint16_t begin_move = 0;
 static uint16_t end_move = 0; 
 static uint16_t bar_code = 0; 
@@ -39,19 +40,21 @@ int16_t speed_correction_function(void) {
     int proximity_two = 0;
     int proximity_five = 0;
     int proximity_six = 0;
+    int proximity_seven = 0; 
     proximity_zero = get_calibrated_prox(0); 
     proximity_one = get_calibrated_prox(1); 
     proximity_two = get_calibrated_prox(2); 
     proximity_five = get_calibrated_prox(5);
     proximity_six = get_calibrated_prox(6); 
+    proximity_seven = get_calibrated_prox(7); 
 
 
     // if the wall is to close turn left or turn right to avoid it 
-    if (proximity_two > WALL_THRESHOLD || proximity_one > 200 || proximity_zero > 150) {
+    if (proximity_two > WALL_THRESHOLD_ONE || proximity_one > WALL_THRESHOLD_TWO || proximity_zero > WALL_THRESHOLD_THREE) {
         // turn left
         speed_correction = ROTATION_COEFF;
         return speed_correction;
-    } else if (proximity_five > WALL_THRESHOLD || proximity_six > 200) {
+    } else if (proximity_five > WALL_THRESHOLD_ONE || proximity_six > WALL_THRESHOLD_TWO || proximity_seven > WALL_THRESHOLD_THREE) {
         // turn right
         speed_correction = - ROTATION_COEFF;
         return speed_correction;
@@ -62,41 +65,26 @@ int16_t speed_correction_function(void) {
     } 
 }
 
-int16_t rotation_speed_bar_code(void){
-
-    int proximity_one = 0;
-
-    proximity_one = get_calibrated_prox(1);
+void rotation_speed_bar_code(void){
 
     // read a beginning and an end and turn left or turn right until good values are detected
-    if(begin_move > 0 && end_move > 400) {
+    if(begin_move > 0 && end_move > 300) {
         // the position is fine
-        rotation_speed = 0;
+        rotation_speed_left = 0; 
+        rotation_speed_right = 0;
         good_position = true;
-        return rotation_speed;
-    } else if (begin_move == 0 && end_move > 400) {
+    // we cannot detect a beginning, that means the robot is oriented to the left
+    } else if (begin_move == 0 && end_move > 300) {
         // turn right 
-        rotation_speed = -SPEED_BAR_CODE;
+        rotation_speed_left = 0;
+        rotation_speed_right = -SPEED_BAR_CODE; 
         good_position = false; 
-        return rotation_speed;
+    // we cannot detect an end, that means the robot is oriented to the right
     } else if (end_move == 0  && begin_move > 0) {
         //turn left
-        rotation_speed = SPEED_BAR_CODE;
+        rotation_speed_left = -SPEED_BAR_CODE;
+        rotation_speed_right = 0; 
         good_position = false; 
-        return rotation_speed;
-    } else {
-        // if there is no begin or end use the proximity sensor to be in front of the code 
-        if(proximity_one > 120) {
-            //turn left
-            rotation_speed = SPEED_BAR_CODE;
-            good_position = false;
-            return rotation_speed; 
-        } else {
-            // turn right 
-            rotation_speed = -SPEED_BAR_CODE;
-            good_position = false; 
-            return rotation_speed;
-        }   
     }
 }
 
@@ -136,7 +124,6 @@ void extract_bar_code(void) {
 
     if(fill_code){
         bar_code = code;
-        chprintf((BaseSequentialStream *)&SD3, "code=%i\n\r", bar_code);
 
         playNote(BIP_FREQU, BIP_DURATION);
         code_detected = true;
@@ -153,7 +140,7 @@ void extract_bar_code(void) {
             }
         }
 
-        if(final_code[null_rank - 1] == 0b1000000000000001){
+        if(final_code[null_rank - 1] == 0b1000001100000111){
 
 
             uint16_t project_notes[MELODY_SIZE_MAX] = {0};
@@ -202,7 +189,7 @@ void rotate(int speed_r, int speed_l) {
 
     left_motor_set_speed(speed_l_step_s);
     right_motor_set_speed(speed_r_step_s); 
-    chThdSleepMilliseconds(1500); 
+    chThdSleepMilliseconds(1000); 
     left_motor_set_speed(0);
     right_motor_set_speed(0); 
 
@@ -226,6 +213,8 @@ static THD_FUNCTION(RobotManagementThd, arg) {
 
         distance = VL53L0X_get_dist_mm();
 
+        // if the distance is equal to zero the ToF sensor is not initialized 
+        // do nothing until it was initialized
         if(distance != 0) {
 
 
@@ -254,9 +243,11 @@ static THD_FUNCTION(RobotManagementThd, arg) {
                     // the robot rotates until in front of the bar code 
                     begin_move = get_public_begin_move();
                     end_move = get_public_end_move(); 
-                    rotation_speed = rotation_speed_bar_code();
-                    left_motor_set_speed(-rotation_speed);
-                    right_motor_set_speed(rotation_speed);
+                    distance = VL53L0X_get_dist_mm();
+                    speed = p_regulator(distance, GOAL_DISTANCE); 
+                    rotation_speed_bar_code();
+                    left_motor_set_speed(speed + rotation_speed_left);
+                    right_motor_set_speed(speed + rotation_speed_right);
                         
                     if(good_position == true) {
                         state = 3;
@@ -277,7 +268,7 @@ static THD_FUNCTION(RobotManagementThd, arg) {
 
                 case 4:
                     // turns and avoid walls 
-                    rotate(-8,2);
+                    rotate(-7,-1);
                     state = 0;  
                     break;
 

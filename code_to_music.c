@@ -14,7 +14,7 @@ uint16_t code_to_frequency(uint16_t note){
 
 	switch(note){
 
-		case 0:
+		case 31:
 			frequency = NOTE_C4;
 			break;
 
@@ -138,7 +138,7 @@ uint16_t code_to_frequency(uint16_t note){
 			frequency = NOTE_FS6;
 			break;
 
-		case 31:
+		case 0:
 			frequency = PAUSE;
 			break;
 	}
@@ -219,7 +219,7 @@ void get_melody_from_code(uint16_t* buffer_melody, uint16_t* buffer_code, uint8_
 	mask_note_2 = 0b0000000011111000; //extract second note 
  	//extract second durations
 
-	uint16_t temp_note_1 = 0, temp_note_2 = 0;
+	uint16_t volatile temp_note_1 = 0, temp_note_2 = 0;
 
 	uint8_t indice_notes = 0;
 	uint8_t indice_code = 0;
@@ -238,6 +238,8 @@ void get_melody_from_code(uint16_t* buffer_melody, uint16_t* buffer_code, uint8_
 			indice_notes++;
 			buffer_melody[indice_notes] = code_to_frequency(temp_note_2);
 			indice_notes++;
+
+
 
 		}
 		indice_code++;
