@@ -8,7 +8,9 @@
 #include <camera/po8030.h>
 
 #include <process_image.h>
+#include <robot_management.h>
 #include <play_melody.h>
+#include <code_to_music.h>
 
 
 
@@ -16,15 +18,24 @@
 
 
 static uint16_t public_end = 0;
+static uint16_t public_end_move = 0;
 static volatile uint16_t data[BAR_CODE_SIZE] = {0};
 static uint16_t public_begin = 0;
+static uint16_t public_begin_move = 0; 
 static uint16_t bar_code = 0;
+static bool code_detected = false;
 //semaphores
 static BSEMAPHORE_DECL(image_ready_sem, TRUE);
 //static BSEMAPHORE_DECL(bar_code_ready_sem, TRUE);
 /*static MUTEX_DECL(bar_code_lock);
 static CONDVAR_DECL(bar_code_condvar);
 */
+//conditional variables
+
+
+//reference
+static thread_reference_t process_image_ref = NULL;
+
 static bool process_image_done = false;
 static uint16_t final_code[MELODY_SIZE_MAX] = {0};
 static uint8_t code_indice_cnt;
@@ -35,7 +46,6 @@ static uint8_t code_indice_cnt;
  *  Returns the line's width extracted from the image buffer given
  *  Returns 0 if line not found
  */
-
 void extract_limits_bis(uint8_t *buffer){
 	
 	uint16_t   i = 0;
@@ -49,9 +59,6 @@ void extract_limits_bis(uint8_t *buffer){
 	average_diff = 10;
 
 	//averaging the noise
-
-
-	
 
 	//searching for a beginning
 	while(stop == 0 && i<(IMAGE_BUFFER_SIZE - WIDTH_SLOPE)){
@@ -96,13 +103,69 @@ void extract_limits_bis(uint8_t *buffer){
 	}
 }
 
+void extract_limits_move(uint8_t *buffer){
+	
+	uint16_t   i = 0;
+	uint16_t   j = IMAGE_BUFFER_SIZE - WIDTH_SLOPE;
+	uint16_t   diff_begin = 0, diff_end = 0, begin = 0, end = 0;
+	uint8_t    stop_begin = 0, stop_end = 0;
+	uint32_t   average_diff=0;
+
+	average_diff = 10;
+
+	//averaging the noise
+	
+	//searching for a beginning
+	while (i < 120 && stop_begin == 0){
+
+		if(abs(buffer[i]) > abs(buffer[i+WIDTH_SLOPE])){
+			diff_begin = buffer[i] - buffer[i+WIDTH_SLOPE];
+		} else {
+			diff_begin = buffer[i+WIDTH_SLOPE] - buffer[i];
+		}
+
+		if (diff_begin > 3*average_diff){
+			diff_begin = 0; 
+			begin = i + WIDTH_SLOPE; 
+			stop_begin = 1;
+		} 
+		i++;
+	}
+
+	// if begin found, search for end
+
+	//if(i < (IMAGE_BUFFER_SIZE - WIDTH_SLOPE)  && begin != 0){
+		//stop = 0;
+		
+		while(j > 500 && stop_end == 0){
+
+			if( (buffer[j-WIDTH_SLOPE]) < (buffer[j]) ){
+				diff_end = buffer[j] - buffer[j-WIDTH_SLOPE];
+			} else if((buffer[j-WIDTH_SLOPE]) > (buffer[j])) {
+				diff_end = buffer[j-WIDTH_SLOPE] - buffer[j];
+			} //else { i = true;}
+
+			if(diff_end > 3*average_diff){
+				diff_end = 0; 
+				end = j - WIDTH_SLOPE;
+				stop_end = 1;
+			}
+			j--;
+		}
+	//}
+
+	public_end_move = end;
+	public_begin_move = begin;
+
+}
+
 
 uint16_t extract_code_ter(uint8_t *buffer){
 	uint16_t width_pixels = 0;
 	uint32_t average_barcode = 0;
 	uint8_t count_size_data = 0, count_size_bits = 0;
 	uint16_t new_begin = public_begin, old_begin = public_begin;
-	uint16_t i = 0;
+	uint16_t volatile i = 0;
 
 
 	width_pixels = public_end - public_begin + 1;
@@ -171,7 +234,7 @@ uint16_t extract_code_ter(uint8_t *buffer){
 	uint8_t code_indice = 0;
 	uint8_t addition = 0;
 
-	//à supprimer
+	//ï¿½ supprimer
 	uint8_t volatile nbre_bits_tab[BAR_CODE_SIZE] = {0};
 
 	for(uint8_t i = 1; i < null_rank; i++){
@@ -261,8 +324,13 @@ static THD_FUNCTION(ProcessImage, arg) {
 	systime_t time;
 	systime_t new_time;
 
+	bool* process = NULL;
 
     while(1){
+
+    //wait for RobotManagement's signal
+    
+
 
     	time = chVTGetSystemTime();
     	//waits until an image has been captured
@@ -298,10 +366,13 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 
 		//let's find the (public) end and begin variables
-		extract_limits_bis(image);
+		extract_limits_move(image); 
+		
 
+		extract_limits_bis(image);
 		//chprintf((BaseSequentialStream *)&SD3, "begin=%i pixels",public_begin);
 		//chprintf((BaseSequentialStream *)&SD3, "end=%ipixels\r\n",public_end);
+
 
 
 
@@ -313,15 +384,25 @@ static THD_FUNCTION(ProcessImage, arg) {
 		uint16_t mask_bit15 = 0b1000000000000000;
 		uint16_t mask_bit0  = 0b0000000000000001;
 		bool code_stable = true;
+		bool fill_code = false;
 
+		chMtxLock(get_processImage_lock());
+			while(!get_start_reading_code()){
+				//wait for the robot to be in a good position
+				chCondWait(get_processImage_condvar());
+			}
 
-		while(compteur < 50 && code_stable){
+		while(code_stable){
 			
 			code = extract_code_ter(image);
 			
 			if((code & mask_bit15) && (code & mask_bit0)){
 				if(code == temp_code){
 					compteur++;
+					if(compteur == 50){
+						fill_code = true;
+						break;
+					}
 				} else {
 					temp_code = code;
 					compteur = 1;
@@ -336,7 +417,7 @@ static THD_FUNCTION(ProcessImage, arg) {
 			}
 		}
 
-		if(code_stable){
+		if(fill_code){
 			
 			//chMtxLock(&bar_code_lock);
 
@@ -345,12 +426,18 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 			playNote(BIP_FREQU, BIP_DURATION);
 
-			code_detected = true;
-
 			final_code[code_indice_cnt] = bar_code;
 			code_indice_cnt++;
 
-			chThdSleepMilliseconds(4000);
+			code_detected = true;
+
+			
+
+
+
+
+
+			//chThdSleepMilliseconds(4000);
 
 
 
@@ -408,11 +495,13 @@ static THD_FUNCTION(ProcessImage, arg) {
 			}
 
 
-			chThdYield();
+
+			//tells the threads waiting that the image has been processed correctly
+			
 
 
 			//chMtxUnlock(&bar_code_lock);
-			//signal que un code barre a été trouvé
+			//signal que un code barre a Ã©tÃ© trouvÃ©
 			//chCondSignal(&bar_code_condvar);
 
 			//signals the bar_code has been captured
@@ -423,9 +512,18 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 		}
 	}
+	
+	chMtxUnlock(get_processImage_lock());
 }
 
 
+uint16_t get_public_begin_move(void){
+	return public_begin_move;
+}
+
+uint16_t get_public_end_move(void){
+	return public_end_move;
+}
 
 uint16_t get_public_begin(void){
 	return public_begin;
@@ -439,14 +537,15 @@ uint16_t get_bar_code(void){
 	return bar_code;
 }
 
-bool get_process_image_done(void){
-	return process_image_done;
+bool get_code_detected(void) {
+	return code_detected;
 }
 
-uint16_t* get_melody_ptr(void){
-
-	return &(final_code[0]);
+thread_reference_t* get_processImage_ref(void){
+	return &process_image_ref;
 }
+
+
 /*condition_variable_t* get_barcode_condvar(void){
 	return &bar_code_condvar;
 }

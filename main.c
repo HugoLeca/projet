@@ -21,15 +21,20 @@
 
 #include <pi_regulator.h>
 #include <process_image.h>
-#include <process_distance.h>
+#include <robot_management.h>
 #include <test_audio.h>
 #include <code_to_music.h>
 
+messagebus_t bus;
+MUTEX_DECL(bus_lock);
+CONDVAR_DECL(bus_condvar);
+
+
 void SendUint8ToComputer(uint8_t* data, uint16_t size) 
 {
-	chSequentialStreamWrite((BaseSequentialStream *)&SDU1, (uint8_t*)"START", 5);
-	chSequentialStreamWrite((BaseSequentialStream *)&SDU1, (uint8_t*)&size, sizeof(uint16_t));
-	chSequentialStreamWrite((BaseSequentialStream *)&SDU1, (uint8_t*)data, size);
+	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)"START", 5);
+	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)&size, sizeof(uint16_t));
+	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)data, size);
 }
 
 static void serial_start(void)
@@ -51,6 +56,7 @@ int main(void)
     chSysInit();
     mpu_init();
 
+    messagebus_init(&bus, &bus_lock, &bus_condvar);
     //starts the serial communication
     serial_start();
     //start the USB communication
@@ -60,26 +66,32 @@ int main(void)
     dcmi_start();
 	po8030_start();
 	//inits the motors
+	motors_init();
+	//starts the audio
+	dac_start();
+	//starts the threads for the proximity sensors 
+	proximity_start();
+	calibrate_ir();
 
-    //starts the DAC module
-    dac_start();
+	//starts the thread for the ToF sensor
+	VL53L0X_start();
 
-	//stars the threads for the pi regulator and the processing of the image
+	//starts the thread for the pi regulator
 	//pi_regulator_start();
+	//starts the thread for the robot
+	robot_management_start();
+
 	process_image_start();
 
-
-
-    //starts the thread for playing melodies, internals or externals
-
-   // test_audio_external();
-   //playProjectStart();
-
-
-
+	
+	//starts the thread for playing melodies, internals or externals
+    //playMelodyStart();
+    //test_audio_external();
 
     /* Infinite loop. */
     while (1) {
+
+
     	//waits 1 second
         chThdSleepMilliseconds(1000);
     }

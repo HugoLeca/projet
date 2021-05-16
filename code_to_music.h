@@ -13,6 +13,9 @@ void get_durations_from_code(uint16_t* buffer_durations, uint16_t* buffer_code);
 //
 //void wait_code_bar_ready(void);
 
+//
+//void wait_code_bar_ready(void);
+
 
 
 

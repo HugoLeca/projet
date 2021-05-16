@@ -11,6 +11,8 @@ void extract_limits(uint8_t *buffer);
 //autre methode
 void extract_limits_bis(uint8_t *buffer);
 
+void extract_limits_move(uint8_t *buffer);
+
 //analyse l'image et en extrait un code binaire
 //uint16_t extract_code(uint8_t *buffer);
 
@@ -27,8 +29,18 @@ uint16_t get_public_begin(void);
 //returns public_end, i.e le last pixel of the code
 uint16_t get_public_end(void);
 
+uint16_t get_public_begin_move(void);
+
+uint16_t get_public_end_move(void);
+
 //return the bar code
 uint16_t get_bar_code(void);
+
+
+thread_reference_t* get_processImage_ref(void);
+mutex_t* get_processImage_lock(void);
+condition_variable_t* get_processImage_condvar(void);
+
 
 //returns the adress of bar_code_ready_sem so that playProjectThd in code_to_music file
 /*//can access this ressource
@@ -46,7 +58,8 @@ condition_variable_t* get_barcode_condvar(void);
 //le code barre, retourne faux sinon
 int get_section_value(uint16_t average_barcode, uint16_t average_section);
 
-uint16_t* get_melody_ptr(void);
 bool get_process_image_done(void);
+uint16_t get_public_begin(void);
+uint16_t get_public_end(void) ;
 
 #endif /* PROCESS_IMAGE_H */
