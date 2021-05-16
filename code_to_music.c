@@ -1,3 +1,10 @@
+/*
+	NAME : code_to_music.c
+	AUTHOR : HUGO LECA
+	LAST MODIFICATION : 16/05/2021
+*/
+
+
 #include "ch.h"
 #include "hal.h"
 
@@ -10,13 +17,15 @@
 
 uint16_t code_to_frequency(uint16_t note){
 
+	//these frequencies use the LUT in the file e-puck2_main-processor/src/audio/play_melody.h
 	uint16_t frequency = 0;
 
 	switch(note){
 
-		case 31:
-			frequency = NOTE_C4;
+		case 0:
+			frequency = PAUSE;
 			break;
+
 
 		case 1:
 			frequency = NOTE_CS4;
@@ -138,18 +147,17 @@ uint16_t code_to_frequency(uint16_t note){
 			frequency = NOTE_FS6;
 			break;
 
-		case 0:
-			frequency = PAUSE;
+		case 31:
+			frequency = NOTE_C4;
 			break;
+
 	}
 	return frequency;
 }
 
 uint16_t code_to_durations(uint16_t code){
 
-	//si tempo = 1 --> note jouee pendant 1 seconde
-	//si tempo = 2 --> note jouee pendant 1/2 sec
-	//etc...
+	//the durations are in millisconds
 	uint16_t duration = 0;
 	
 	switch(code){
@@ -179,8 +187,8 @@ void get_durations_from_code(uint16_t* buffer_durations, uint16_t* buffer_code, 
 	uint16_t mask_durations_1 = 0;
 	uint16_t mask_durations_2 = 0;
 
-	mask_durations_1 = 0b0000001100000000; //extract first durations
-	mask_durations_2 = 0b0000000000000110;
+	mask_durations_1 = 0b0000001100000000; //extracts first durations
+	mask_durations_2 = 0b0000000000000110; //extracts the second durations
 
 
 	uint16_t temp_durations_1 = 0, temp_durations_2 = 0;
@@ -190,7 +198,7 @@ void get_durations_from_code(uint16_t* buffer_durations, uint16_t* buffer_code, 
 	uint8_t indice_code = 0;
 	uint8_t stop = 0;
 
-
+	//bit by bit manipulaton and fill in the duration buffer in argument
 	while(stop == 0){
 
 		if(indice_code == (null_rank - 1)){
@@ -217,7 +225,7 @@ void get_melody_from_code(uint16_t* buffer_melody, uint16_t* buffer_code, uint8_
 
 	mask_note_1 = 0b0111110000000000; //extracts first note
 	mask_note_2 = 0b0000000011111000; //extract second note 
- 	//extract second durations
+ 
 
 	uint16_t volatile temp_note_1 = 0, temp_note_2 = 0;
 
@@ -225,6 +233,7 @@ void get_melody_from_code(uint16_t* buffer_melody, uint16_t* buffer_code, uint8_
 	uint8_t indice_code = 0;
 	uint8_t stop = 0;
 
+	//bit by bit manipulaton and fill in the duration buffer in argument
 	while(stop == 0){
 
 		if(indice_code == (null_rank - 1)){
@@ -238,9 +247,6 @@ void get_melody_from_code(uint16_t* buffer_melody, uint16_t* buffer_code, uint8_
 			indice_notes++;
 			buffer_melody[indice_notes] = code_to_frequency(temp_note_2);
 			indice_notes++;
-
-
-
 		}
 		indice_code++;
 	}

@@ -1,3 +1,8 @@
+/*
+	NAME : main.h
+	AUTHOR : HUGO LECA and MARGUERITE FAUROUX
+	LAST MODIFICATION : 16/05/2021
+*/
 #ifndef MAIN_H
 #define MAIN_H
 
