@@ -22,19 +22,26 @@ extern "C" {
 #define WIDTH_SLOPE				5
 #define PAUSE					0
 #define TAB_SIZE				100// a checker
+#define AVERAGE_DIFF			10
+#define STEP_COEF				3
 
 //constants for the robot's mouvement
 #define MIN_BAR_CODE_WIDTH		40 //a checker
-#define ROTATION_COEFF			300 
-#define SPEED_BAR_CODE		    120
-#define GOAL_DISTANCE 			60.0f
+#define ROTATION_COEFF			450 
+#define SPEED_BAR_CODE		    70
+#define BEGINNING_THRESHOLD     150
+#define END_THRESHOLD           490
+#define GOAL_DISTANCE 			65
 #define ERROR_THRESHOLD			4.0f	
 #define KP						15.0f
-#define MOTOR_SPEED 			300.0f 
-#define WALL_THRESHOLD			1200.0f
+#define MOTOR_SPEED 			450
+#define WALL_THRESHOLD_ONE		1200 // three different values for the different proximity sensors 
+#define WALL_THRESHOLD_TWO      200
+#define WALL_THRESHOLD_THREE    150
 #define WHEEL_PERIMETER 		13 
 #define NSTEP_ONE_TURN          1000
-#define DISTANCE_MIN            100
+#define DISTANCE_MIN            130
+
 
 /** Robot wide IPC bus. */
 extern messagebus_t bus;

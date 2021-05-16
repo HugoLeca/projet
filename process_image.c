@@ -39,11 +39,7 @@ void extract_limits_bis(uint8_t *buffer){
 	uint16_t   j = IMAGE_BUFFER_SIZE - WIDTH_SLOPE;
 	uint16_t   diff = 0, begin = 0, end = 0;
 	uint8_t stop = 0;
-	uint32_t   average_diff=0;
 
-	average_diff = 10;
-
-	//averaging the noise
 
 	//searching for a beginning
 	while(stop == 0 && i<(IMAGE_BUFFER_SIZE - WIDTH_SLOPE)){
@@ -54,7 +50,7 @@ void extract_limits_bis(uint8_t *buffer){
 			diff = buffer[i+WIDTH_SLOPE] - buffer[i];
 		}
 
-		if (diff > 3*average_diff){
+		if (diff > STEP_COEF*AVERAGE_DIFF){
 			begin = i + WIDTH_SLOPE;
 			stop = 1;
 		}
@@ -74,7 +70,7 @@ void extract_limits_bis(uint8_t *buffer){
 				diff = buffer[j-WIDTH_SLOPE] - buffer[j];
 			} else { i = true;}
 
-			if(diff > 4*average_diff && j != (IMAGE_BUFFER_SIZE - 2*WIDTH_SLOPE)){
+			if(diff > STEP_COEF*AVERAGE_DIFF && j != (IMAGE_BUFFER_SIZE - 2*WIDTH_SLOPE)){
 				end = j - WIDTH_SLOPE;
 				stop = 1;
 			}
@@ -90,18 +86,16 @@ void extract_limits_bis(uint8_t *buffer){
 
 void extract_limits_move(uint8_t *buffer){
 	
-	uint16_t   i = 0;
-	uint16_t   j = IMAGE_BUFFER_SIZE - WIDTH_SLOPE;
-	uint16_t   diff_begin = 0, diff_end = 0, begin = 0, end = 0;
+	uint16_t i = 0;
+	uint16_t j = IMAGE_BUFFER_SIZE - WIDTH_SLOPE;
+	uint16_t diff_begin = 0, diff_end = 0, begin = 0, end = 0;
 	uint8_t    stop_begin = 0, stop_end = 0;
-	uint32_t   average_diff=0;
 
-	average_diff = 10;
-
-	//averaging the noise
 	
-	//searching for a beginning
-	while (i < 120 && stop_begin == 0){
+	// searching for a beginning
+	// if the beginning is more than BEGINNING_THRESHOLD the value stays at zero 
+	// that means the robot is not well oriented 
+	while (i < BEGINNING_THRESHOLD && stop_begin == 0){
 
 		if(abs(buffer[i]) > abs(buffer[i+WIDTH_SLOPE])){
 			diff_begin = buffer[i] - buffer[i+WIDTH_SLOPE];
@@ -109,7 +103,7 @@ void extract_limits_move(uint8_t *buffer){
 			diff_begin = buffer[i+WIDTH_SLOPE] - buffer[i];
 		}
 
-		if (diff_begin > 3*average_diff){
+		if (diff_begin > STEP_COEF*AVERAGE_DIFF){
 			diff_begin = 0; 
 			begin = i + WIDTH_SLOPE; 
 			stop_begin = 1;
@@ -117,27 +111,24 @@ void extract_limits_move(uint8_t *buffer){
 		i++;
 	}
 
-	// if begin found, search for end
+	// searching for an end 
+	// if the end is less than END_THRESHOLD the value stays at zero
+	// that means the robot is not well oriented 	
+	while(j > 490 && stop_end == 0){
 
-	//if(i < (IMAGE_BUFFER_SIZE - WIDTH_SLOPE)  && begin != 0){
-		//stop = 0;
-		
-		while(j > 500 && stop_end == 0){
-
-			if( (buffer[j-WIDTH_SLOPE]) < (buffer[j]) ){
-				diff_end = buffer[j] - buffer[j-WIDTH_SLOPE];
-			} else if((buffer[j-WIDTH_SLOPE]) > (buffer[j])) {
-				diff_end = buffer[j-WIDTH_SLOPE] - buffer[j];
-			} //else { i = true;}
-
-			if(diff_end > 3*average_diff){
-				diff_end = 0; 
-				end = j - WIDTH_SLOPE;
-				stop_end = 1;
-			}
-			j--;
+		if( (buffer[j-WIDTH_SLOPE]) < (buffer[j]) ){
+			diff_end = buffer[j] - buffer[j-WIDTH_SLOPE];
+		} else if((buffer[j-WIDTH_SLOPE]) > (buffer[j])) {
+			diff_end = buffer[j-WIDTH_SLOPE] - buffer[j];
 		}
-	//}
+
+		if(diff_end > STEP_COEF*AVERAGE_DIFF){
+			diff_end = 0;
+			end = j - WIDTH_SLOPE;
+			stop_end = 1;
+		}
+		j--;
+	}
 
 	public_end_move = end;
 	public_begin_move = begin;
@@ -146,24 +137,17 @@ void extract_limits_move(uint8_t *buffer){
 
 uint16_t extract_code_ter(uint8_t *buffer){
 
-	uint16_t width_pixels = 0;
-	uint32_t average_barcode = 0;
-	uint8_t count_size_data = 0, count_size_bits = 0;
-	uint16_t new_begin = public_begin, old_begin = public_begin;
+	uint8_t count_size_data = 0;
+	uint16_t new_begin = public_begin;
 	uint16_t volatile i = 0;
 
 
-	width_pixels = public_end - public_begin + 1;
-
-	uint16_t average_diff = 0;
 	uint16_t volatile diff = 0;
 
-	average_diff = 10;
-	uint16_t volatile data_volatile[BAR_CODE_SIZE] = {0};
 
 
 
-	//data and data_volatile contain every step (positive or negative) on the image
+	//data contain every step (positive or negative) on the image
 	while(i<(IMAGE_BUFFER_SIZE - WIDTH_SLOPE)){
 
 		if( abs(buffer[i]) > abs(buffer[i+WIDTH_SLOPE]) ){
@@ -172,39 +156,40 @@ uint16_t extract_code_ter(uint8_t *buffer){
 			diff = buffer[i+WIDTH_SLOPE] - buffer[i];
 		}
 
-		if (diff > 3*average_diff){
-			uint16_t section_width = 0;
-			uint8_t bits_size = 0;
+		if (diff > STEP_COEF*AVERAGE_DIFF){
 
 			//find the section new section width
 			new_begin = i;
 
 			//check step detection
-			data[count_size_data] = i;
+			data[count_size_data] = new_begin;
 			count_size_data++;
 
-			//moves i enough so that the algo doesn't detect the same step
+			//moves i forward enough so that the algo doesn't detect the same step
 			i += 3*WIDTH_SLOPE;
 			
 		}
 		i++;
 	}
 
-	for(uint8_t i = 0; i<BAR_CODE_SIZE; i++){
-		data_volatile[i]=data[i];
-	}
-
+//////////////////////////////////////////////////////////////////////////
+	//à voir si utile pour le code
 	uint8_t null_rank = 0;
 
 	for(uint8_t i = 0; i < BAR_CODE_SIZE ; i++){
-		if(data_volatile[i] == 0){
+		if(data[i] == 0){
 			null_rank = i;
 			break;
 		}
 	}
 
-	public_begin = data_volatile[0];
-	public_end = data_volatile[null_rank - 1];
+	//extract the limits of the barcode in pixels
+	public_begin = data[0];
+	public_end = data[null_rank - 1];
+
+//////////////////////////////////////////////////////////////////////////
+
+
 
 
 	//code filling algorithm
@@ -215,29 +200,26 @@ uint16_t extract_code_ter(uint8_t *buffer){
 	uint8_t code_indice = 0;
 	uint8_t addition = 0;
 
-	//� supprimer
-	uint8_t volatile nbre_bits_tab[BAR_CODE_SIZE] = {0};
 
 	for(uint8_t i = 1; i < null_rank; i++){
 
-		nbre_bits = get_size_bits(data_volatile[i] - data_volatile[i-1]);
-		nbre_bits_tab[i] = nbre_bits;
+		nbre_bits = get_size_bits(data[i] - data[i-1]);
 		addition = 1;
 
+		//putting the bits at the right place according to the number of bits
 		for(uint8_t j = 0; j < nbre_bits ; j++){
 			mask += addition;
 			addition = addition*2;
 		}
-
-
 		if(bit_value){
 			mask = mask << ((BAR_CODE_SIZE - nbre_bits) - code_indice);
 			code |= mask;
-
 		} 
+		//reset the mask
 		mask = 0;
 		code_indice += nbre_bits;
 
+		//toggle the bit value for the next step detected
 		bit_value = !bit_value;
 	}
 
@@ -246,12 +228,15 @@ uint16_t extract_code_ter(uint8_t *buffer){
 
 uint8_t get_size_bits(uint16_t width){
 
+
 	uint8_t size = 0;
 	float   pixels_per_bit = 0;
 	uint16_t total_width = (public_end - public_begin + 1);
 
+	//compute the number of pixels (float value) for one bits
 	pixels_per_bit = (float)total_width/BAR_CODE_SIZE;
 
+	//size takes the value of the number of pixels in width
 	if((float)width < 1.5*pixels_per_bit){
 		size = 1;
 		return size;
@@ -298,23 +283,15 @@ static THD_FUNCTION(ProcessImage, arg) {
 	uint8_t *img_buff_ptr; 
 	uint8_t image[IMAGE_BUFFER_SIZE] = {0};
 
-	systime_t time;
-	systime_t new_time;
-
-
+	//THREAD ROUTINE : fill the image buffer and extracts the interesting data
     while(1){
 
     	for(uint8_t i = 0; i<10 ; i++){
-	    	time = chVTGetSystemTime();
+
 	    	//waits until an image has been captured
 	        chBSemWait(&image_ready_sem);
 			//gets the pointer to the array filled with the last image in RGB565    
 			img_buff_ptr = dcmi_get_last_image_ptr();
-
-			//sends the data buffer of the given size to the computer
-			//SendUint8ToComputer(uint8_t* data, uint16_t size);
-
-			bool send_to_computer = true;
 
 
 			//Extracts only the red pixels
@@ -324,19 +301,16 @@ static THD_FUNCTION(ProcessImage, arg) {
 				//takes nothing from the second byte
 				image[i/2] = (uint8_t)img_buff_ptr[i]&0xF8;
 			}
-			/*
-			if(send_to_computer){
-				//sends to the computer the image
-				SendUint8ToComputer(image, IMAGE_BUFFER_SIZE);
-			}
-			//invert the bool
-			send_to_computer = !send_to_computer;
-			*/
 
 			//let's find the (public) end and begin variables	
+
+			//extracts the limits for decoding the barcode
 			extract_limits_bis(image);
+
+			//extract the limits for robot placement in front of the barcode
 			extract_limits_move(image);
 
+			//return the 16bits binary barcode
 			code = extract_code_ter(image); 
 		}
 	}
@@ -363,9 +337,6 @@ uint16_t get_code(void){
 	return code;
 }
 
-// bool get_code_detected(void) {
-// 	return code_detected;
-// }
 
 void process_image_start(void){
 	chThdCreateStatic(waProcessImage, sizeof(waProcessImage), NORMALPRIO, ProcessImage, NULL);
