@@ -21,17 +21,14 @@ extern "C" {
 #define BIP_FREQU				4186
 #define BIP_DURATION			50
 #define MELODY_SIZE_MAX			20
-#define COUNTED_ENOUGH			5 // a checker
 #define BAR_CODE_SIZE 			16
 #define IMAGE_BUFFER_SIZE		640
 #define WIDTH_SLOPE				5
 #define PAUSE					0
-#define TAB_SIZE				100// a checker
 #define AVERAGE_DIFF			10
 #define STEP_COEF				3
 
 //constants for the robot's mouvement
-#define MIN_BAR_CODE_WIDTH		40 //a checker
 #define ROTATION_COEFF			450 
 #define SPEED_BAR_CODE		    70
 #define BEGINNING_THRESHOLD     150
